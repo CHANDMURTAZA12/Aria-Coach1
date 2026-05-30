@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#080c14"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="ARIA"/>
+<title>ARIA — Call Coach</title>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080c14;--s1:#0d1220;--s2:#111827;--s3:#1a2235;
+  --b1:rgba(255,255,255,0.06);--b2:rgba(255,255,255,0.11);--b3:rgba(255,255,255,0.2);
+  --t1:#f0f4ff;--t2:rgba(220,230,255,0.65);--t3:rgba(180,200,255,0.35);
+  --ac:#5b8dee;--ac2:#7aa8f5;--green:#3dd68c;--red:#f06b6b;--amber:#f5a623;
+}
+html,body{min-height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--t1);overflow-x:hidden}
+button,select,input,textarea{touch-action:manipulation;-webkit-appearance:none;font-family:inherit}
+.hidden{display:none!important}
+
+/* BG */
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 100% 55% at 50% -5%,rgba(40,80,200,0.22) 0%,transparent 65%),
+  radial-gradient(ellipse 60% 40% at 0% 100%,rgba(30,60,160,0.14) 0%,transparent 60%),
+  linear-gradient(160deg,#0a0f1e 0%,#080c14 55%,#06090f 100%);
+}
+#bg::after{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(91,141,238,0.04) 1px,transparent 1px);background-size:32px 32px;}
+
+/* LAYOUT */
+#app{position:relative;z-index:1;display:none;flex-direction:column;min-height:100vh;padding-bottom:72px}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(8,12,20,0.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--b2);padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between}
+.topbar-brand{font-size:20px;font-weight:700;letter-spacing:-0.5px}
+.topbar-right{display:flex;gap:8px}
+.icon-btn{background:var(--b1);border:1px solid var(--b2);color:var(--t1);padding:8px 14px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em}
+.icon-btn:active{background:var(--b2)}
+
+/* TABS */
+.tabs{display:flex;padding:10px 16px 0;gap:6px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--t3);letter-spacing:.02em}
+.tab.active{background:var(--b2);color:var(--t1);border-color:var(--b3)}
+
+/* PAGES */
+.page{display:none;flex-direction:column;gap:12px;padding:12px 16px}
+.page.active{display:flex}
+
+/* CARDS */
+.card{background:var(--b1);border:1px solid var(--b2);border-radius:20px;padding:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:12px}
+
+/* BTNS */
+.btn{padding:13px 20px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;border:none;letter-spacing:.02em;transition:transform .12s,opacity .12s}
+.btn:active{transform:scale(.96);opacity:.85}
+.btn-full{width:100%}
+.btn-primary{background:var(--ac);color:#fff}
+.btn-green{background:rgba(61,214,140,.15);color:var(--green);border:1px solid rgba(61,214,140,.25)}
+.btn-red{background:rgba(240,107,107,.12);color:var(--red);border:1px solid rgba(240,107,107,.2)}
+.btn-ghost{background:var(--b2);color:var(--t1);border:1px solid var(--b3)}
+.btn-sm{padding:9px 16px;font-size:13px;border-radius:10px}
+.btn-row{display:flex;gap:8px}
+.btn-row .btn{flex:1}
+
+/* INPUT */
+.inp{background:var(--b2);border:1px solid var(--b3);border-radius:12px;padding:12px 14px;color:var(--t1);font-size:14px;outline:none;width:100%}
+.inp:focus{border-color:var(--ac)}
+textarea.inp{resize:none;min-height:48px;max-height:100px}
+.select{width:100%;background:var(--s2);border:1px solid var(--b3);border-radius:12px;padding:12px 14px;color:var(--t1);font-size:14px;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237aa8f5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+
+/* TOAST */
+#toast-wrap{position:fixed;top:calc(env(safe-area-inset-top)+66px);left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;width:calc(100vw - 32px);max-width:380px}
+.toast{padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transform:translateY(-6px);transition:all .25s;pointer-events:none;text-align:center;backdrop-filter:blur(20px)}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:rgba(61,214,140,.15);border:1px solid rgba(61,214,140,.3);color:var(--green)}
+.toast.warn{background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.25);color:var(--amber)}
+.toast.error{background:rgba(240,107,107,.12);border:1px solid rgba(240,107,107,.25);color:var(--red)}
+.toast.info{background:rgba(91,141,238,.12);border:1px solid rgba(91,141,238,.25);color:var(--ac2)}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(8,12,20,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--b2);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:40}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0;border:none;background:transparent;color:var(--t3);font-size:10px;font-weight:600;font-family:inherit;letter-spacing:.04em;transition:color .2s}
+.nav-btn.active{color:var(--ac2)}
+.nav-icon{font-size:20px;line-height:1}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:32px;
+  background:radial-gradient(ellipse 100% 60% at 50% 0%,rgba(40,80,200,0.25) 0%,transparent 65%),#080c14}
+.sp-orb{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,rgba(91,141,238,0.9),rgba(122,168,245,0.7));box-shadow:0 0 80px rgba(91,141,238,0.4),0 0 160px rgba(91,141,238,0.15);animation:breathe 3s ease-in-out infinite}
+.sp-title{font-size:42px;font-weight:700;letter-spacing:-1.5px;text-align:center}
+.sp-sub{color:var(--t2);text-align:center;font-size:14px;max-width:280px;line-height:1.7}
+.sp-btn{background:var(--ac);color:#fff;border:none;padding:17px 52px;border-radius:999px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(91,141,238,0.35)}
+.sp-btn:active{transform:scale(.96)}
+
+/* ── CALL PAGE ── */
+/* Setup card */
+.difficulty-row{display:flex;gap:6px;margin-bottom:12px}
+.diff-btn{flex:1;padding:10px 6px;border-radius:10px;border:1px solid var(--b2);background:var(--b1);color:var(--t2);font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all .2s}
+.diff-btn.active.easy{background:rgba(61,214,140,.15);border-color:rgba(61,214,140,.4);color:var(--green)}
+.diff-btn.active.medium{background:rgba(245,166,35,.12);border-color:rgba(245,166,35,.35);color:var(--amber)}
+.diff-btn.active.hard{background:rgba(240,107,107,.12);border-color:rgba(240,107,107,.3);color:var(--red)}
+
+/* Call status */
+.call-bar{border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;margin-bottom:0}
+.call-bar.idle{background:var(--b1);border:1px solid var(--b2);color:var(--t3)}
+.call-bar.live{background:rgba(240,107,107,.1);border:1px solid rgba(240,107,107,.25);color:var(--red)}
+.call-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.call-bar.idle .call-dot{background:var(--t3)}
+.call-bar.live .call-dot{background:var(--red);animation:blink .7s ease-in-out infinite}
+
+/* Live meters */
+.meters-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.meter-card{background:var(--b1);border:1px solid var(--b2);border-radius:14px;padding:12px 10px;text-align:center}
+.meter-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:6px}
+.meter-val{font-size:22px;font-weight:700;line-height:1}
+.meter-bar-wrap{height:4px;background:var(--b2);border-radius:2px;margin-top:6px;overflow:hidden}
+.meter-bar{height:100%;border-radius:2px;transition:width .4s ease,background .4s ease}
+
+/* Client temp */
+.temp-wrap{background:var(--b1);border:1px solid var(--b2);border-radius:14px;padding:12px 14px}
+.temp-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:8px;display:flex;justify-content:space-between}
+.temp-bar-wrap{height:8px;background:var(--b2);border-radius:4px;overflow:hidden}
+.temp-bar{height:100%;border-radius:4px;transition:width .5s ease,background .5s ease}
+.temp-status{font-size:12px;font-weight:700;margin-top:6px;text-align:right}
+
+/* Script step */
+.step-card{background:rgba(91,141,238,.07);border:1px solid rgba(91,141,238,.2);border-radius:14px;padding:12px 14px}
+.step-num{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ac2);margin-bottom:4px}
+.step-text{font-size:14px;line-height:1.6;color:var(--t1);font-weight:500}
+
+/* Suggestions */
+.sug-wrap{background:rgba(91,141,238,.06);border:1px solid rgba(91,141,238,.18);border-radius:16px;padding:14px}
+.sug-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ac2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sug-opt{background:var(--b1);border:1px solid var(--b2);border-left:3px solid var(--ac);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.sug-opt:last-child{margin-bottom:0}
+.sug-opt-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ac2);margin-bottom:5px}
+.sug-opt-text{font-size:13px;line-height:1.65;color:var(--t1);margin-bottom:5px}
+.sug-bridge{font-size:12px;color:var(--green);font-weight:600;border-top:1px solid var(--b2);padding-top:6px;margin-top:4px}
+.sug-tip{font-size:11px;color:var(--t3);font-style:italic;margin-top:3px}
+.sug-loading{font-size:13px;color:var(--t2);text-align:center;padding:12px;font-style:italic}
+
+/* Tone badge */
+.tone-badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;margin-top:4px}
+.tone-confident{background:rgba(61,214,140,.15);color:var(--green)}
+.tone-nervous{background:rgba(245,166,35,.12);color:var(--amber)}
+.tone-robotic{background:rgba(180,200,255,.1);color:var(--t2)}
+.tone-natural{background:rgba(91,141,238,.15);color:var(--ac2)}
+
+/* Alert banner */
+.alert-banner{border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:0}
+.alert-warn{background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);color:var(--amber)}
+.alert-error{background:rgba(240,107,107,.1);border:1px solid rgba(240,107,107,.25);color:var(--red)}
+
+/* Call feed */
+.call-feed{display:flex;flex-direction:column;gap:7px;max-height:220px;overflow-y:auto;padding-right:2px}
+.call-feed::-webkit-scrollbar{width:3px}
+.call-feed::-webkit-scrollbar-thumb{background:var(--b3);border-radius:2px}
+.cf-line{padding:9px 13px;border-radius:10px;font-size:13px;line-height:1.6}
+.cf-line.client{background:rgba(240,107,107,.07);border:1px solid rgba(240,107,107,.15);border-left:3px solid var(--red)}
+.cf-line.agent{background:rgba(61,214,140,.06);border:1px solid rgba(61,214,140,.12);border-left:3px solid var(--green)}
+.cf-who{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.cf-line.client .cf-who{color:var(--red)}
+.cf-line.agent .cf-who{color:var(--green)}
+
+/* Input row */
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.mic-btn{width:46px;height:46px;border-radius:12px;border:1px solid var(--b3);background:var(--b2);color:var(--t1);font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.mic-btn.listening{background:rgba(61,214,140,.15);border-color:var(--green);animation:pulse .8s ease-in-out infinite}
+
+/* Report */
+.report-wrap{font-size:14px;line-height:1.8;color:var(--t1);white-space:pre-wrap}
+.stars{font-size:28px;letter-spacing:2px;text-align:center}
+
+/* Patch rate */
+.patch-rate-big{font-size:48px;font-weight:700;text-align:center;line-height:1;color:var(--green)}
+.patch-rate-label{font-size:13px;color:var(--t2);text-align:center;margin-top:4px}
+.kpi-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.kpi{background:var(--b1);border:1px solid var(--b2);border-radius:14px;padding:14px 10px;text-align:center}
+.kpi-num{font-size:26px;font-weight:700;line-height:1}
+.kpi-lbl{font-size:11px;color:var(--t2);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+
+/* Pattern alert */
+.pattern-alert{background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--amber);line-height:1.6}
+
+/* ── NEWS PAGE ── */
+.news-item{padding:16px 0;border-bottom:1px solid var(--b2)}
+.news-item:first-child{padding-top:0}
+.news-item:last-child{border-bottom:none;padding-bottom:0}
+.news-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:3px 10px;border-radius:999px;background:rgba(91,141,238,.15);color:var(--ac2);margin-bottom:8px}
+.news-headline{font-size:16px;font-weight:700;line-height:1.45;margin-bottom:8px;letter-spacing:-.2px}
+.news-what{font-size:13px;line-height:1.7;color:var(--t2);margin-bottom:6px}
+.news-why{font-size:13px;line-height:1.7;color:var(--green);font-weight:500}
+.news-why::before{content:'💼 Why it matters: '}
+
+/* ── STATS PAGE ── */
+.streak-card{background:linear-gradient(135deg,rgba(245,166,35,.12),rgba(245,166,35,.05));border:1px solid rgba(245,166,35,.2);border-radius:20px;padding:20px;display:flex;align-items:center;gap:16px}
+.streak-num{font-size:52px;font-weight:700;color:var(--amber);line-height:1}
+
+/* ── SETTINGS MODAL ── */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center}
+.modal-sheet{background:#0d1220;border-radius:24px 24px 0 0;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;padding-bottom:40px;animation:slideUp .3s cubic-bezier(.16,1,.3,1)}
+.modal-handle{width:40px;height:4px;background:var(--b3);border-radius:2px;margin:12px auto 0}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--b2);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:17px;font-weight:700}
+.modal-body{padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.field-label{font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+
+/* ANIMATIONS */
+@keyframes breathe{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.85}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .8s linear infinite}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="toast-wrap"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-orb"></div>
+  <div>
+    <div class="sp-title">ARIA</div>
+    <div class="sp-sub">Your personal call center coach. Built for Chand. Let's make you elite. 🔥</div>
+  </div>
+  <button class="sp-btn" id="boot-btn">Start Training →</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-brand">ARIA 🎯</div>
+    <div class="topbar-right">
+      <button class="icon-btn" id="settings-btn">⚙️ Settings</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" data-page="call">📞 Live Call</button>
+    <button class="tab" data-page="news">📰 AI News</button>
+    <button class="tab" data-page="stats">📊 Stats</button>
+  </div>
+
+  <!-- ══ CALL PAGE ══ -->
+  <div class="page active" id="page-call">
+
+    <!-- Pattern Alert (shows if recurring mistake) -->
+    <div class="pattern-alert hidden" id="pattern-alert"></div>
+
+    <!-- Setup -->
+    <div class="card" id="setup-card">
+      <div class="card-title">Difficulty Level</div>
+      <div class="difficulty-row">
+        <button class="diff-btn easy active" data-diff="easy">🟢 Easy</button>
+        <button class="diff-btn medium" data-diff="medium">🟡 Medium</button>
+        <button class="diff-btn hard" data-diff="hard">🔴 Hard</button>
+      </div>
+      <div class="card-title" style="margin-top:12px">Client Type</div>
+      <select class="select" id="client-type-sel"></select>
+      <div style="height:12px"></div>
+      <button class="btn btn-primary btn-full" id="start-btn">Start Call 📞</button>
+    </div>
+
+    <!-- LIVE CALL UI (hidden until call starts) -->
+    <div class="hidden" id="live-wrap">
+
+      <!-- Call bar -->
+      <div class="call-bar live" id="call-bar">
+        <div class="call-dot"></div>
+        <span>CALL IN PROGRESS</span>
+        <span style="margin-left:auto;font-size:12px;color:var(--t2)" id="call-timer">0:00</span>
+      </div>
+
+      <!-- 3 Live Meters -->
+      <div class="meters-row">
+        <!-- Confidence -->
+        <div class="meter-card">
+          <div class="meter-label">Confidence</div>
+          <div class="meter-val" id="conf-val" style="color:var(--green)">8</div>
+          <div class="meter-bar-wrap"><div class="meter-bar" id="conf-bar" style="width:80%;background:var(--green)"></div></div>
+        </div>
+        <!-- Tone -->
+        <div class="meter-card">
+          <div class="meter-label">Tone</div>
+          <div class="meter-val" id="tone-val" style="font-size:13px;color:var(--ac2);padding-top:4px">—</div>
+          <div style="height:4px"></div>
+        </div>
+        <!-- Patch Rate -->
+        <div class="meter-card">
+          <div class="meter-label">Patch %</div>
+          <div class="meter-val" id="patch-rate-mini" style="color:var(--ac2)">—</div>
+          <div class="meter-bar-wrap"><div class="meter-bar" id="patch-bar" style="width:0%;background:var(--ac)"></div></div>
+        </div>
+      </div>
+
+      <!-- Client Temperature -->
+      <div class="temp-wrap">
+        <div class="temp-label">
+          <span>Client Temperature</span>
+          <span id="temp-text" style="color:var(--green)">Warm</span>
+        </div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar" id="temp-bar" style="width:70%;background:var(--green)"></div>
+        </div>
+      </div>
+
+      <!-- Wrap-up warning -->
+      <div class="alert-warn hidden" id="wrapup-warn">⏱️ Call is getting long. Wrap up and patch — say your Step 9 line now!</div>
+
+      <!-- Current Script Step -->
+      <div class="step-card">
+        <div class="step-num" id="step-num">Step 1 of 9</div>
+        <div class="step-text" id="step-text">Loading...</div>
+      </div>
+
+      <!-- Reply Suggester -->
+      <div class="sug-wrap">
+        <div class="sug-title">💡 What to say next</div>
+        <div id="sug-content"><div class="sug-loading">Waiting for client...</div></div>
+      </div>
+
+      <!-- Call Feed -->
+      <div class="card" style="padding:12px">
+        <div class="card-title">Call Feed</div>
+        <div class="call-feed" id="call-feed"></div>
+      </div>
+
+      <!-- Your turn input -->
+      <div class="card" style="padding:12px">
+        <div class="card-title" id="your-turn-label">🎤 Your Turn — Speak or Type</div>
+        <div class="input-row">
+          <button class="mic-btn" id="mic-btn">🎤</button>
+          <textarea class="inp" id="agent-inp" placeholder="Or type your response..." rows="2"></textarea>
+          <button class="btn btn-ghost btn-sm" id="send-btn" style="flex-shrink:0;height:46px">Send</button>
+        </div>
+      </div>
+
+      <button class="btn btn-red btn-full" id="end-btn">End Call</button>
+    </div>
+
+    <!-- POST CALL REPORT -->
+    <div class="hidden" id="report-card">
+      <div class="card">
+        <div class="card-title">📋 ARIA's Call Report</div>
+        <div class="stars" id="report-stars"></div>
+        <div style="height:12px"></div>
+        <div class="report-wrap" id="report-text"></div>
+      </div>
+      <button class="btn btn-primary btn-full" id="new-call-btn">New Call 🔄</button>
+    </div>
+
+  </div>
+
+  <!-- ══ NEWS PAGE ══ -->
+  <div class="page" id="page-news">
+    <div class="card">
+      <div class="card-title-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:0">Today's AI News</div>
+        <button class="btn btn-ghost btn-sm" id="refresh-news-btn">Refresh</button>
+      </div>
+      <div id="news-feed"><div class="sug-loading">Loading AI news...</div></div>
+    </div>
+  </div>
+
+  <!-- ══ STATS PAGE ══ -->
+  <div class="page" id="page-stats">
+
+    <!-- Streak -->
+    <div class="streak-card">
+      <div class="streak-num" id="streak-num">0</div>
+      <div>
+        <div style="font-size:16px;font-weight:700">Day Streak 🔥</div>
+        <div style="font-size:13px;color:var(--t2);margin-top:4px" id="streak-sub">Keep showing up daily</div>
+      </div>
+    </div>
+
+    <!-- Today's KPIs -->
+    <div class="card">
+      <div class="card-title">Today's Numbers</div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-num" id="kpi-calls" style="color:var(--ac2)">0</div><div class="kpi-lbl">Calls</div></div>
+        <div class="kpi"><div class="kpi-num" id="kpi-patches" style="color:var(--green)">0</div><div class="kpi-lbl">Patches</div></div>
+        <div class="kpi"><div class="kpi-num" id="kpi-mocks" style="color:var(--amber)">0</div><div class="kpi-lbl">Mocks</div></div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="log-call-btn">+1 Call</button>
+        <button class="btn btn-green" id="log-patch-btn">+1 Patch</button>
+      </div>
+    </div>
+
+    <!-- Patch Rate -->
+    <div class="card">
+      <div class="card-title">Patch Rate (Mock Calls)</div>
+      <div class="patch-rate-big" id="overall-patch-rate">—</div>
+      <div class="patch-rate-label">of mock calls successfully patched</div>
+      <div style="height:12px"></div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.7" id="patch-breakdown"></div>
+    </div>
+
+    <!-- Pattern Alerts History -->
+    <div class="card">
+      <div class="card-title">⚠️ Pattern Alerts</div>
+      <div id="pattern-history" style="font-size:13px;color:var(--t2);line-height:1.8">No patterns detected yet. Complete more mock calls.</div>
+    </div>
+
+    <div class="card">
+      <button class="btn btn-red btn-full" id="reset-btn" style="font-size:13px">Reset Today's Stats</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal hidden" id="settings-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Settings</div>
+      <button class="icon-btn" id="close-settings-btn">Done</button>
+    </div>
+    <div class="modal-body">
+      <div><div class="field-label">Groq API Key</div><input class="inp" id="inp-groq" type="password" placeholder="gsk_..."/><div style="font-size:11px;color:var(--t3);margin-top:4px">Free at console.groq.com — powers all AI</div></div>
+      <div><div class="field-label">ElevenLabs API Key</div><input class="inp" id="inp-eleven" type="password" placeholder="Your ElevenLabs key"/><div style="font-size:11px;color:var(--t3);margin-top:4px">Free at elevenlabs.io — powers voice</div></div>
+      <div><div class="field-label">ARIA Voice ID</div><input class="inp" id="inp-aria-voice" placeholder="21m00Tcm4TlvDq8ikWAM (Rachel — default)"/></div>
+      <div><div class="field-label">Client Voice ID</div><input class="inp" id="inp-client-voice" placeholder="ODq5zmih8GrVes37Dizd (Adam — default)"/></div>
+      <div style="background:rgba(91,141,238,.07);border:1px solid rgba(91,141,238,.15);border-radius:12px;padding:12px;font-size:12px;color:var(--t2);line-height:1.6">🔒 Keys stored only on this device. Never shared.</div>
+      <button class="btn btn-primary btn-full" id="save-settings-btn">Save Settings ✓</button>
+    </div>
+  </div>
+</div>
+
+<audio id="voice-player" preload="auto"></audio>
+
+<script>
+(() => {
+const SK = 'aria-v4';
+
+// ── EXACT SCRIPT STEPS ──────────────────────────────────────────
+const STEPS = [
+  {n:1, label:'Step 1 — Opener', say:'Hello, my name is Mark. How are you doing today? / This is Mark from Motor Vehicle Accidental Helpline.'},
+  {n:2, label:'Step 2 — Reason for Call', say:'I am calling you regarding a car accident that happened last year. It seems that your compensation money has not been delivered to you yet — is that correct?'},
+  {n:3, label:'Step 3 — Attorney Check', say:'Just to confirm — is there any attorney currently working on your case?'},
+  {n:'3a', label:'Step 3a — Legal Docs (if attorney)', say:'Did you sign any legal documents with them yet? [If YES → hang up politely]'},
+  {n:4, label:'Step 4 — Fault Check', say:'According to the police report, who was placed at fault — you or the other person?'},
+  {n:5, label:'Step 5 — Police Ticket', say:'Did you receive any ticket from the police? [If YES → hang up politely]'},
+  {n:6, label:'Step 6 — Medical Treatment', say:'Did you receive any medical treatment after the accident? [If NO → hang up politely]'},
+  {n:7, label:'Step 7 — Pain Check', say:'Did you have any minor pain — like back pain, neck pain, shoulder pain, or any other pain? [If NO → hang up politely]'},
+  {n:8, label:'Step 8 — Current Pain', say:'Oh, I\'m so sorry to hear that. How are you feeling now — are you feeling better or do you still have those pains?'},
+  {n:9, label:'Step 9 — Patch', say:'That\'s all the information I need to confirm. I am going to patch you to my senior specialist who will guide you on how to get your compensation money.'},
+];
+
+// ── FULL CLIENT RESPONSES + BRIDGES ─────────────────────────────
+const RESPONSES = {
+  step1:[
+    {r:"I'm good thanks / Fine / Doing well",b:"That's great to hear! I'm calling because it looks like there may be some compensation money that hasn't been delivered to you yet — does that ring a bell?"},
+    {r:"Who is this? / Where are you calling from?",b:"This is Mark from Motor Vehicle Accidental Helpline. I'm calling because it looks like your compensation money may not have been delivered. It'll only take a moment — were you involved in any car accident recently?"},
+    {r:"I'm busy right now",b:"I completely understand — this will take less than 2 minutes and it could be about money that belongs to you. Can I have just 60 seconds?"},
+    {r:"How did you get my number?",b:"Your information was flagged through public accident records. I'm just calling to make sure your compensation was properly delivered. It'll only take a moment — were you in a car accident recently?"},
+    {r:"Not interested / I don't want to talk",b:"I understand completely — most people feel that way before they realize there's money sitting unclaimed with their name on it. Can I just ask you one quick question?"},
+  ],
+  step2:[
+    {r:"Yes, that's correct / Yes I haven't received anything",b:"Okay perfect. Just to confirm — is there any attorney currently working on your case?"},
+    {r:"No, I already received my compensation",b:"Oh great! And did you feel you received the full amount you were entitled to? Sometimes settlements close before victims get everything they deserve. Did any attorney handle that for you?"},
+    {r:"What accident? / I don't remember any accident",b:"It would have been reported through police or insurance records. Were you involved in any kind of vehicle accident — even a minor one — in the past couple of years?"},
+    {r:"Is this a scam? / How do I know this is real?",b:"Completely valid question — I'm not asking for any payment or bank details whatsoever. I'm just verifying whether compensation was properly delivered to you. It takes 2 minutes and costs you nothing. Just to confirm — is there any attorney currently working on your case?"},
+    {r:"I'm not interested",b:"I understand — but this is specifically about money that may already belong to you from your accident. Can I just ask one quick thing — is there any attorney currently working on your case?"},
+  ],
+  step3:[
+    {r:"No, no attorney / I don't have a lawyer",b:"Perfect. So according to the police report, who was placed at fault — you or the other person?"},
+    {r:"Yes I have an attorney",b:"Oh great choice. Did you actually sign the legal representation agreement with them yet?"},
+    {r:"I'm not sure / Maybe",b:"No problem. Have you spoken to any lawyer about this accident or signed any paperwork related to it? Even if just a consultation?"},
+    {r:"What do you mean attorney?",b:"I mean a lawyer — someone who would legally represent you for this accident case. Have you spoken to any lawyer or signed any legal documents about the accident?"},
+  ],
+  step3a:[
+    {r:"No, not yet signed",b:"Okay, so you haven't officially signed yet — that's fine. So according to the police report, who was placed at fault — you or the other person?"},
+    {r:"Yes I signed the documents",b:"Oh understood — so they are already handling everything for you. I don't want to interfere with that process at all. You have a good day and good luck with your case!"},
+    {r:"I think so / Maybe I signed something",b:"Just to clarify — did you physically sign a legal representation agreement? Because if it's not officially signed, you may still have options available. Did you sign a formal document?"},
+  ],
+  step4:[
+    {r:"The other person was at fault",b:"Perfect. And did you receive any ticket from the police at the scene of the accident?"},
+    {r:"I was at fault",b:"I see — and did you receive any ticket from the police at the scene?"},
+    {r:"It was shared / both of us",b:"Understood. And did you receive any ticket from the police at the scene of the accident?"},
+    {r:"I don't know / No police report",b:"No problem. Did you happen to receive any ticket or citation from the police at the time of the accident?"},
+    {r:"There was no police involved",b:"Okay, understood. Did you receive any medical treatment after the accident?"},
+  ],
+  step5:[
+    {r:"No, no ticket",b:"Perfect. Did you receive any medical treatment after the accident?"},
+    {r:"Yes I got a ticket",b:"Oh I see — unfortunately in that case our helpline wouldn't be able to assist you further. But thank you for your time and you have a great day!"},
+    {r:"I'm not sure / I don't recall",b:"Okay, so you don't remember receiving any official citation or fine from the police — if not, that's fine. Did you receive any medical treatment after the accident?"},
+  ],
+  step6:[
+    {r:"Yes I did / I went to the hospital",b:"Okay great. And did you experience any kind of pain — like back pain, neck pain, shoulder pain, or any other pain after the accident?"},
+    {r:"No, I didn't get treatment",b:"Oh I see — unfortunately without medical treatment on record we wouldn't be able to process your case. But thank you so much for your time and you have a great day!"},
+    {r:"Just the emergency room / ER visit",b:"That absolutely counts — even ER treatment qualifies. And did you have any pain like back pain, neck pain, or shoulder pain after the accident?"},
+    {r:"I went to the doctor a few days later",b:"That also counts — any medical treatment works. And did you experience any pain like back pain, neck pain, or shoulder pain?"},
+  ],
+  step7:[
+    {r:"Yes, back pain / neck pain / shoulder pain",b:"Oh, I'm so sorry to hear that. And how are you feeling now — are you feeling better or do you still have those pains?"},
+    {r:"No pain at all",b:"Oh understood — unfortunately without any reported pain our specialist wouldn't be able to assist further. Thank you so much for your time and you have a great day!"},
+    {r:"Just a little bit of pain",b:"Even minor pain counts and qualifies. Oh I'm so sorry to hear that — and how are you feeling now, better or still having those pains?"},
+    {r:"My whole body was hurting",b:"Oh I'm really sorry to hear that. And how are you feeling now — are you feeling better or do you still have those pains?"},
+    {r:"I had headaches / dizziness",b:"That qualifies as pain — I'm sorry you went through that. How are you feeling now — better or do you still have those issues?"},
+  ],
+  step8:[
+    {r:"Still in pain / Not fully recovered",b:"I'm really sorry to hear that. That's exactly why we want to make sure you get the full compensation you deserve. That's all I need — let me connect you with my senior specialist right now."},
+    {r:"A bit better but not 100%",b:"That's good to hear — but you still deserve to be fully compensated for what you went through. That's all I need — let me patch you through to my senior specialist right now."},
+    {r:"Fully recovered now",b:"Glad to hear that — but you still went through that experience and deserve proper compensation. That's all I need — let me connect you to my senior specialist."},
+    {r:"Still taking medication / physio",b:"I'm really sorry to hear that. That's exactly why this call is so important. That's all I need — let me patch you to my senior specialist right now."},
+  ],
+  step9:[
+    {r:"Okay / Sure / Go ahead",b:"Perfect — please hold on just one moment."},
+    {r:"How long will this take?",b:"My specialist will be right with you — it won't take long at all. Please hold just one moment."},
+    {r:"Is this free? Will it cost me anything?",b:"Absolutely free — there is no charge to you whatsoever. Please hold just one moment."},
+    {r:"What do I need to do?",b:"You don't need to do anything at all — just speak with my specialist and they will guide you through everything. Please hold."},
+    {r:"I changed my mind / Maybe another time",b:"I completely understand — but you've come this far and my specialist can answer any question you have. It's literally just a conversation. Please hold just one moment."},
+  ],
+  universal:[
+    {r:"Call me back later",b:"Of course — would later today work or is tomorrow morning better for you?"},
+    {r:"I need to think about it",b:"Absolutely — what specifically would you like to think about? Maybe I can answer that right now."},
+    {r:"I already handled everything",b:"Great — and did you feel you received the full amount you were actually entitled to? Sometimes cases close before victims get everything."},
+    {r:"Stop calling me / Remove me from your list",b:"I completely understand — I'll make sure to remove you from our list immediately. So sorry to bother you. Have a great day!"},
+    {r:"What company are you from?",b:"I'm calling from Motor Vehicle Accidental Helpline — we work to make sure accident victims receive their full compensation. Now just to confirm quickly — [return to current script step]."},
+  ]
+};
+
+// ── CLIENT TYPES ─────────────────────────────────────────────────
+const CLIENT_TYPES = {
+  easy:[
+    {id:'easy-friendly',label:'🟢 Friendly & Cooperative',desc:'Happy to talk. Gives clear quick answers. Easy to patch.'},
+    {id:'easy-confused',label:'🟢 Confused but Willing',desc:'Doesn\'t fully understand but stays on the line.'},
+    {id:'easy-forgetful',label:'🟢 Forgetful',desc:'Remembers things slowly but answers everything.'},
+    {id:'easy-elderly',label:'🟢 Elderly & Polite',desc:'Old fashioned and polite. Answers slowly but clearly.'},
+    {id:'easy-eager',label:'🟢 Eager for Money',desc:'Very interested in compensation. Wants to qualify quickly.'},
+  ],
+  medium:[
+    {id:'medium-skeptical',label:'🟡 Skeptical',desc:'Questions the call but stays on the line.'},
+    {id:'medium-busy',label:'🟡 Busy & Distracted',desc:'Short quick answers. Wants it fast.'},
+    {id:'medium-cautious',label:'🟡 Cautious',desc:'Careful about giving info but not rude.'},
+    {id:'medium-handled',label:'🟡 Already Handled It',desc:'Claims everything is sorted. Needs probing.'},
+    {id:'medium-privacy',label:'🟡 Privacy Worried',desc:'Concerned about giving personal information.'},
+  ],
+  hard:[
+    {id:'hard-attorney',label:'🔴 Has Attorney',desc:'Firm about having a lawyer. Short answers.'},
+    {id:'hard-angry',label:'🔴 Angry & Aggressive',desc:'Annoyed from the start. Very short clipped answers.'},
+    {id:'hard-scam',label:'🔴 Thinks It\'s a Scam',desc:'Constantly challenges legitimacy. Trap questions.'},
+    {id:'hard-trap',label:'🔴 Trap Questioner',desc:'Asks detailed trap questions to catch you out.'},
+    {id:'hard-hostile',label:'🔴 Hostile & Rude',desc:'May HANG_UP at any moment. Zero patience.'},
+  ],
+};
+
+// ── DEFAULT STATE ────────────────────────────────────────────────
+const DS = {
+  settings:{groqKey:'',elevenKey:'',ariaVoiceId:'21m00Tcm4TlvDq8ikWAM',clientVoiceId:'ODq5zmih8GrVes37Dizd'},
+  streak:0,lastOpen:'',
+  byDay:{},
+  callHistory:[],  // [{patched:bool, stepsSkipped:[], difficulty, hangup:bool}]
+  news:[],
+};
+
+let S = JSON.parse(JSON.stringify(DS));
+let R = {
+  thinking:false,speechActive:false,settingUpAudio:false,listening:false,
+  speechUrl:'',page:'call',
+  // Call state
+  callActive:false,callTimer:null,callSecs:0,
+  stepIdx:0,difficulty:'easy',clientType:'easy-friendly',
+  mockHistory:[],
+  confidence:8,clientTemp:70,callTone:'—',
+  stepsSkipped:[],patched:false,
+  // Speech
+  recog:null,hasSpeech:false,recogTarget:'call',
+};
+
+// ── HELPERS ──────────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function todayKey(){return new Date().toISOString().slice(0,10);}
+function todayStats(){const k=todayKey();if(!S.byDay[k])S.byDay[k]={calls:0,patches:0,mocks:0,patched:0,total:0};return S.byDay[k];}
+function save(){try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}}
+function load(){try{const r=localStorage.getItem(SK);if(!r)return;const p=JSON.parse(r);S=Object.assign({},DS,p);S.settings=Object.assign({},DS.settings,p.settings||{});S.callHistory=p.callHistory||[];}catch(e){}}
+
+// ── TOAST ────────────────────────────────────────────────────────
+function toast(msg,type='info'){
+  const w=$('toast-wrap');
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;el.textContent=msg;
+  w.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},3200);
+}
+
+// ── TABS ─────────────────────────────────────────────────────────
+function switchPage(name){
+  R.page=name;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.page===name));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===`page-${name}`));
+  if(name==='stats')renderStats();
+  if(name==='news')renderNews();
+}
+
+// ── CLIENT TYPE SELECTOR ─────────────────────────────────────────
+function buildClientSelector(){
+  const diff=R.difficulty;
+  const types=CLIENT_TYPES[diff]||CLIENT_TYPES.easy;
+  const sel=$('client-type-sel');
+  sel.innerHTML=types.map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
+  R.clientType=types[0].id;
+}
+
+// ── METERS ───────────────────────────────────────────────────────
+function updateMeters(){
+  // Confidence
+  $('conf-val').textContent=R.confidence;
+  const cb=$('conf-bar');
+  cb.style.width=(R.confidence*10)+'%';
+  cb.style.background=R.confidence>=7?'var(--green)':R.confidence>=4?'var(--amber)':'var(--red)';
+  $('conf-val').style.color=R.confidence>=7?'var(--green)':R.confidence>=4?'var(--amber)':'var(--red)';
+  // Tone
+  const toneEl=$('tone-val');
+  toneEl.textContent=R.callTone;
+  const tc={Confident:'var(--green)',Natural:'var(--ac2)',Nervous:'var(--amber)',Robotic:'var(--t2)','—':'var(--t3)'};
+  toneEl.style.color=tc[R.callTone]||'var(--t2)';
+  // Patch rate
+  const d=todayStats();
+  const pr=d.total>0?Math.round((d.patched/d.total)*100):null;
+  $('patch-rate-mini').textContent=pr!==null?pr+'%':'—';
+  if(pr!==null){$('patch-bar').style.width=pr+'%';$('patch-bar').style.background=pr>=60?'var(--green)':pr>=30?'var(--amber)':'var(--red)';}
+  // Client temp
+  const tb=$('temp-bar');
+  tb.style.width=R.clientTemp+'%';
+  tb.style.background=R.clientTemp>=60?'var(--green)':R.clientTemp>=35?'var(--amber)':'var(--red)';
+  const ts=$('temp-text');
+  ts.textContent=R.clientTemp>=70?'Warm 🔥':R.clientTemp>=45?'Cooling ⚠️':R.clientTemp>=20?'Cold ❄️':'About to hang up ⛔';
+  ts.style.color=R.clientTemp>=60?'var(--green)':R.clientTemp>=35?'var(--amber)':'var(--red)';
+}
+
+function updateScriptStep(){
+  const step=STEPS[Math.min(R.stepIdx,STEPS.length-1)];
+  $('step-num').textContent=`${step.label}`;
+  $('step-text').textContent=step.say;
+}
+
+function updateCallFeed(){
+  const feed=$('call-feed');
+  if(!R.mockHistory.length){feed.innerHTML='<div style="color:var(--t3);font-size:13px">Call will appear here...</div>';return;}
+  feed.innerHTML=R.mockHistory.map(m=>`
+    <div class="cf-line ${m.role==='client'?'client':'agent'}">
+      <div class="cf-who">${m.role==='client'?'Client':'You (Mark)'}</div>
+      ${esc(m.content)}
+    </div>`).join('');
+  feed.scrollTop=feed.scrollHeight;
+}
+
+// ── VOICE ────────────────────────────────────────────────────────
+function setOrb(state){
+  // Visual feedback via topbar brand
+  const brand=document.querySelector('.topbar-brand');
+  if(state==='thinking')brand.textContent='ARIA 🔄';
+  else if(state==='speaking')brand.textContent='ARIA 🔊';
+  else if(state==='listening')brand.textContent='ARIA 🎤';
+  else brand.textContent='ARIA 🎯';
+}
+
+function devSpeak(text){
+  return new Promise((res,rej)=>{
+    if(!window.speechSynthesis){rej();return;}
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text.slice(0,300));
+    u.lang='en-US';u.rate=0.92;u.pitch=1.0;
+    const vs=window.speechSynthesis.getVoices();
+    const v=vs.find(v=>v.lang.startsWith('en')&&v.name.toLowerCase().includes('female'))||vs.find(v=>v.lang.startsWith('en-US'))||vs.find(v=>v.lang.startsWith('en'))||null;
+    if(v)u.voice=v;
+    u.onend=res;u.onerror=rej;
+    window.speechSynthesis.speak(u);
+  });
+}
+
+async function speak(text,role='assistant'){
+  const t=String(text||'').replace(/\s+/g,' ').trim();
+  if(!t)return;
+  if(!S.settings.elevenKey){try{await devSpeak(t);}catch(e){}return;}
+  const base=(S.settings.elevenBase||'https://api.elevenlabs.io/v1').replace(/\/$/,'');
+  const vid=role==='client'?(S.settings.clientVoiceId||'ODq5zmih8GrVes37Dizd'):(S.settings.ariaVoiceId||'21m00Tcm4TlvDq8ikWAM');
+  try{
+    R.settingUpAudio=true;R.speechActive=true;setOrb('speaking');
+    const resp=await fetch(`${base}/text-to-speech/${vid}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','xi-api-key':S.settings.elevenKey,'Accept':'audio/mpeg'},
+      body:JSON.stringify({text:t,model_id:'eleven_flash_v2_5',voice_settings:{stability:.5,similarity_boost:.75}})
+    });
+    if(!resp.ok)throw new Error('EL '+resp.status);
+    const blob=await resp.blob();
+    if(R.speechUrl)URL.revokeObjectURL(R.speechUrl);
+    R.speechUrl=URL.createObjectURL(blob);
+    const p=$('voice-player');
+    R.settingUpAudio=true;p.pause();p.src=R.speechUrl;p.currentTime=0;
+    R.settingUpAudio=false;
+    await p.play();
+    await new Promise((res,rej)=>{
+      const done=()=>{cleanup();res();};
+      const cleanup=()=>{p.removeEventListener('ended',done);p.removeEventListener('pause',done);p.removeEventListener('error',rej);};
+      p.addEventListener('ended',done,{once:true});p.addEventListener('pause',done,{once:true});p.addEventListener('error',rej,{once:true});
+    });
+  }catch(e){try{await devSpeak(t);}catch(e2){}}
+  finally{R.settingUpAudio=false;R.speechActive=false;if(!R.listening)setOrb('idle');}
+}
+
+// ── SPEECH RECOGNITION ───────────────────────────────────────────
+function setupRecog(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR)return;
+  R.hasSpeech=true;
+  R.recog=new SR();
+  R.recog.lang='en-US';R.recog.interimResults=true;R.recog.continuous=false;
+  let final='';
+  R.recog.onstart=()=>{final='';R.listening=true;setOrb('listening');$('mic-btn').classList.add('listening');};
+  R.recog.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript+' ';}};
+  R.recog.onerror=()=>{R.listening=false;$('mic-btn').classList.remove('listening');setOrb('idle');};
+  R.recog.onend=async()=>{
+    R.listening=false;$('mic-btn').classList.remove('listening');
+    if(!R.speechActive)setOrb('idle');
+    const spoken=final.trim();
+    if(!spoken)return;
+    await agentTurn(spoken);
+  };
+}
+
+function startRecog(){
+  if(!R.hasSpeech){toast('Voice not supported — type instead','warn');return;}
+  try{R.recog.start();}catch(e){}
+}
+
+// ── GROQ ─────────────────────────────────────────────────────────
+async function groq(messages,maxTokens=400){
+  const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${S.settings.groqKey}`},
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTokens,temperature:0.85,messages})
+  });
+  if(!r.ok)throw new Error('Groq '+r.status);
+  const d=await r.json();
+  return(d.choices||[])[0]?.message?.content||'';
+}
+
+function getClientPrompt(){
+  const ct=CLIENT_TYPES[R.difficulty]?.find(c=>c.id===R.clientType)||CLIENT_TYPES.easy[0];
+  const diff=R.difficulty;
+  return`You are a real American client on a cold call. Character: ${ct.label} — ${ct.desc}. STRICT RULES: 1) Every reply MAX 1-2 short sentences, never more. 2) If you decide to hang up say only: HANG_UP. 3) Only answer what was asked, nothing extra. 4) Easy=cooperative quick answers. Medium=mild hesitation, 1 question back max. Hard=skeptical, short clipped, HANG_UP if agent sounds weak or nervous. 5) The WHOLE call should feel fast like a real cold call. React to agent tone — nervous agent = more suspicious, warm confident agent = softer. Stay in character always, never coach.`;
+}
+
+// ── TONE ANALYSIS ────────────────────────────────────────────────
+async function analyzeTone(agentText){
+  if(!S.settings.groqKey)return;
+  try{
+    const r=await groq([
+      {role:'system',content:'Analyze the call center agent\'s reply tone. Respond with ONLY one word: Confident, Natural, Nervous, or Robotic. Nothing else.'},
+      {role:'user',content:agentText}
+    ],10);
+    const tone=String(r||'').trim().replace(/[^a-zA-Z]/g,'');
+    if(['Confident','Natural','Nervous','Robotic'].includes(tone)){
+      R.callTone=tone;
+      // Confidence scoring
+      if(tone==='Confident')R.confidence=Math.min(10,R.confidence+1);
+      else if(tone==='Nervous')R.confidence=Math.max(1,R.confidence-1);
+      else if(tone==='Robotic')R.confidence=Math.max(1,R.confidence-.5);
+      updateMeters();
+    }
+  }catch(e){}
+}
+
+// ── SUGGESTIONS ──────────────────────────────────────────────────
+async function genSuggestions(clientLine){
+  if(!S.settings.groqKey){
+    // Fallback: use hardcoded responses
+    const stepKey='step'+STEPS[R.stepIdx]?.n;
+    const stepResps=RESPONSES[stepKey]||RESPONSES.universal;
+    $('sug-content').innerHTML=`
+      <div class="sug-opt"><div class="sug-opt-label">Option A</div><div class="sug-opt-text">${esc(stepResps[0]?.b||'Follow your script step.')}</div><div class="sug-bridge">➡️ Then immediately: "${esc(STEPS[Math.min(R.stepIdx+1,STEPS.length-1)]?.say?.slice(0,60))}..."</div></div>
+      <div class="sug-opt"><div class="sug-opt-label">Option B</div><div class="sug-opt-text">${esc(stepResps[1]?.b||stepResps[0]?.b||'Stay calm, validate, redirect.')}</div><div class="sug-bridge">➡️ Bridge: validate what they said, then ask your next question.</div></div>
+    `;
+    return;
+  }
+  $('sug-content').innerHTML='<div class="sug-loading">ARIA writing options...</div>';
+  const step=STEPS[Math.min(R.stepIdx,STEPS.length-1)];
+  const nextStep=STEPS[Math.min(R.stepIdx+1,STEPS.length-1)];
+  try{
+    const rep=await groq([
+      {role:'system',content:`You are ARIA coaching Chand (Pakistani, 1 week call center exp, improving English) on a LIVE call. Client just said: "${clientLine}". Current script step: ${step.label}. Your script line: "${step.say}". Next script step: "${nextStep?.say||'Patch to specialist'}". Give 2 short reply options Chand can SPEAK RIGHT NOW. Each option must: answer/handle what client said, then bridge naturally into the next script question. Format EXACTLY:\nA: [reply text — max 2 sentences]\nBRIDGE_A: [one smooth bridge line leading to next script step]\nTIP_A: [one word tone tip: Confident/Natural/Warm]\nB: [reply text — max 2 sentences]\nBRIDGE_B: [one smooth bridge line]\nTIP_B: [one word tone tip]`},
+      {role:'user',content:'2 options now.'}
+    ],280);
+    const raw=String(rep||'');
+    const g=(p)=>{const m=raw.match(new RegExp(p+':\\s*(.+?)(?=\\n[A-Z_]+:|$)','s'));return m?m[1].trim():'';};
+    const a=g('A'),ba=g('BRIDGE_A'),ta=g('TIP_A'),b=g('B'),bb=g('BRIDGE_B'),tb=g('TIP_B');
+    $('sug-content').innerHTML=`
+      ${a?`<div class="sug-opt">
+        <div class="sug-opt-label">Option A <span style="font-size:10px;color:var(--green)">${esc(ta)}</span></div>
+        <div class="sug-opt-text">${esc(a)}</div>
+        ${ba?`<div class="sug-bridge">➡️ ${esc(ba)}</div>`:''}
+      </div>`:''}
+      ${b?`<div class="sug-opt">
+        <div class="sug-opt-label">Option B <span style="font-size:10px;color:var(--green)">${esc(tb)}</span></div>
+        <div class="sug-opt-text">${esc(b)}</div>
+        ${bb?`<div class="sug-bridge">➡️ ${esc(bb)}</div>`:''}
+      </div>`:''}
+    `;
+  }catch(e){$('sug-content').innerHTML='<div class="sug-loading">Suggestions unavailable. Check Groq key.</div>';}
+}
+
+// ── PATTERN DETECTION ────────────────────────────────────────────
+function detectPatterns(){
+  const hist=S.callHistory.slice(-5);
+  if(hist.length<3)return null;
+  const alerts=[];
+  // Check if same step repeatedly skipped
+  const skipCounts={};
+  hist.forEach(c=>{ (c.stepsSkipped||[]).forEach(s=>{skipCounts[s]=(skipCounts[s]||0)+1;}); });
+  Object.entries(skipCounts).forEach(([step,count])=>{
+    if(count>=3)alerts.push(`⚠️ You've skipped "${step}" in your last ${count} calls. Make sure to always ask this question!`);
+  });
+  // Check hang-up rate
+  const hangups=hist.filter(c=>c.hangup).length;
+  if(hangups>=3&&R.difficulty==='easy')alerts.push('⚠️ Getting hung up on Easy calls 3+ times. Slow down and smile more on your opener.');
+  return alerts.length?alerts[0]:null;
+}
+
+function showPatternAlert(){
+  const alert=detectPatterns();
+  const el=$('pattern-alert');
+  if(alert){el.textContent=alert;el.classList.remove('hidden');}
+  else el.classList.add('hidden');
+}
+
+function renderPatternHistory(){
+  const hist=S.callHistory.slice(-10);
+  const el=$('pattern-history');
+  if(!hist.length){el.textContent='No patterns detected yet. Complete more mock calls.';return;}
+  const skipCounts={};
+  hist.forEach(c=>(c.stepsSkipped||[]).forEach(s=>{skipCounts[s]=(skipCounts[s]||0)+1;}));
+  const lines=[];
+  const patchTotal=hist.length;
+  const patchSuccess=hist.filter(c=>c.patched).length;
+  lines.push(`📞 Last ${hist.length} mock calls — ${patchSuccess} patched, ${patchTotal-patchSuccess} hung up`);
+  Object.entries(skipCounts).forEach(([s,n])=>{if(n>=2)lines.push(`⚠️ Skipped "${s}" → ${n} times`);});
+  el.innerHTML=lines.map(l=>`<div style="padding:4px 0;border-bottom:1px solid var(--b1)">${esc(l)}</div>`).join('');
+}
+
+// ── START CALL ────────────────────────────────────────────────────
+async function startCall(){
+  if(!S.settings.groqKey){toast('Add Groq API key in Settings first','warn');return;}
+  R.callActive=true;R.stepIdx=0;R.mockHistory=[];R.confidence=8;R.clientTemp=70;R.callTone='—';
+  R.stepsSkipped=[];R.patched=false;R.callSecs=0;
+  $('setup-card').classList.add('hidden');
+  $('report-card').classList.add('hidden');
+  $('live-wrap').classList.remove('hidden');
+  $('wrapup-warn').classList.add('hidden');
+  updateCallFeed();updateScriptStep();updateMeters();
+  $('sug-content').innerHTML='<div class="sug-loading">Client is about to answer...</div>';
+  // Start timer
+  R.callTimer=setInterval(()=>{
+    R.callSecs++;
+    $('call-timer').textContent=`${Math.floor(R.callSecs/60)}:${String(R.callSecs%60).padStart(2,'0')}`;
+    if(R.callSecs===180)$('wrapup-warn').classList.remove('hidden');
+    if(R.callSecs===240)toast('⏱️ 4 minutes! Patch NOW or end the call.','error');
+  },1000);
+  todayStats().mocks=(todayStats().mocks||0)+1;save();
+  try{
+    setOrb('thinking');
+    const opening=await groq([
+      {role:'system',content:getClientPrompt()},
+      {role:'user',content:'The phone just rang and you answered it. Give your natural short phone greeting.'}
+    ],50);
+    const line=String(opening||'').trim();
+    R.mockHistory.push({role:'client',content:line});
+    updateCallFeed();
+    await Promise.all([speak(line,'client'),genSuggestions(line)]);
+    // Auto-start mic
+    if(R.hasSpeech&&R.callActive){
+      setTimeout(()=>{if(!R.speechActive&&!R.listening&&R.callActive)startRecog();},400);
+    }
+  }catch(e){toast('Failed to start call. Check Groq.','error');endCall(false);}
+  finally{setOrb('idle');}
+}
+
+// ── AGENT TURN ────────────────────────────────────────────────────
+async function agentTurn(text){
+  const line=String(text||'').trim();
+  if(!line||!R.callActive||R.thinking)return;
+  R.mockHistory.push({role:'agent',content:line});
+  updateCallFeed();$('agent-inp').value='';
+  // Advance script step
+  if(R.stepIdx<STEPS.length-1)R.stepIdx++;
+  updateScriptStep();
+  // Check if step was skipped (simple heuristic: if line is short/generic)
+  if(line.split(' ').length<5)R.stepsSkipped.push(STEPS[R.stepIdx]?.label||'');
+  $('sug-content').innerHTML='<div class="sug-loading">Client responding...</div>';
+  try{
+    R.thinking=true;setOrb('thinking');
+    // Analyze tone in parallel
+    analyzeTone(line);
+    const reply=await groq([
+      {role:'system',content:getClientPrompt()},
+      ...R.mockHistory.map(m=>({role:m.role==='client'?'assistant':'user',content:m.content}))
+    ],60);
+    const cl=String(reply||'').trim();
+    if(cl.includes('HANG_UP')){
+      R.mockHistory.push({role:'client',content:'[Click] — Client hung up.'});
+      updateCallFeed();
+      toast('Client hung up. End call to get your report.','warn');
+      $('sug-content').innerHTML='<div class="sug-loading">Client hung up.</div>';
+      // Update client temp
+      R.clientTemp=Math.max(0,R.clientTemp-30);updateMeters();
+      R.callActive=false;
+      return;
+    }
+    // Update client temperature based on context
+    const lc=cl.toLowerCase();
+    if(lc.includes('not interested')||lc.includes('scam')||lc.includes('remove'))R.clientTemp=Math.max(5,R.clientTemp-15);
+    else if(lc.includes('okay')||lc.includes('sure')||lc.includes('yes'))R.clientTemp=Math.min(100,R.clientTemp+8);
+    else R.clientTemp=Math.max(5,R.clientTemp-5);
+    R.mockHistory.push({role:'client',content:cl});
+    updateCallFeed();updateMeters();
+    await Promise.all([speak(cl,'client'),genSuggestions(cl)]);
+    // Auto-mic
+    if(R.hasSpeech&&R.callActive){
+      setTimeout(()=>{if(!R.speechActive&&!R.listening&&R.callActive)startRecog();},400);
+    }
+  }catch(e){toast('Response failed. Check Groq.','error');}
+  finally{R.thinking=false;if(!R.speechActive)setOrb('idle');}
+}
+
+// ── END CALL ──────────────────────────────────────────────────────
+async function endCall(getReport=true){
+  clearInterval(R.callTimer);R.callActive=false;
+  $('live-wrap').classList.add('hidden');
+  $('wrapup-warn').classList.add('hidden');
+  // Save to history
+  const wasPatched=R.stepIdx>=STEPS.length-1||R.patched;
+  S.callHistory.push({patched:wasPatched,stepsSkipped:R.stepsSkipped,difficulty:R.difficulty,hangup:!wasPatched});
+  if(S.callHistory.length>50)S.callHistory=S.callHistory.slice(-50);
+  const d=todayStats();d.total=(d.total||0)+1;if(wasPatched)d.patched=(d.patched||0)+1;
+  save();
+  if(!getReport||!R.mockHistory.length){$('setup-card').classList.remove('hidden');return;}
+  $('report-card').classList.remove('hidden');
+  $('report-text').textContent='ARIA is analyzing your call...';
+  $('report-stars').textContent='';
+  try{
+    setOrb('thinking');
+    const transcript=R.mockHistory.map(m=>`${m.role==='client'?'CLIENT':'MARK'}: ${m.content}`).join('\n');
+    const report=await groq([
+      {role:'system',content:`You are ARIA. Give Chand a detailed call coaching report. Include: ✅ What he did well, ⚠️ Exact mistakes with better phrasing, 💬 One script line he could improve with exact words, 🎯 Score out of 10, 🔥 One focus for next call. Use emojis. Easy English. 8-10 sentences. Confidence score: ${R.confidence}/10. Tone during call: ${R.callTone}. Steps completed: ${R.stepIdx+1}/${STEPS.length}.`},
+      {role:'user',content:transcript}
+    ],600);
+    $('report-text').textContent=String(report||'').trim();
+    const sm=String(report||'').match(/(\d+)\s*\/\s*10/);
+    const sc=sm?parseInt(sm[1]):7;
+    $('report-stars').textContent='⭐'.repeat(Math.round(sc/2));
+    await speak(String(report||'').slice(0,300),'assistant');
+  }catch(e){
+    $('report-text').textContent=`Good effort bhai! Confidence score: ${R.confidence}/10. Tone: ${R.callTone}. Keep your opener warm and move quickly to the next question after every answer. Focus: first 10 seconds set the tone for the whole call.`;
+    $('report-stars').textContent='⭐⭐⭐⭐';
+  }finally{setOrb('idle');}
+}
+
+// ── STATS ─────────────────────────────────────────────────────────
+function renderStats(){
+  const d=todayStats();
+  $('kpi-calls').textContent=d.calls||0;
+  $('kpi-patches').textContent=d.patches||0;
+  $('kpi-mocks').textContent=d.mocks||0;
+  $('streak-num').textContent=S.streak||0;
+  $('streak-sub').textContent=S.streak>0?`${S.streak} days in a row 💪`:'Start today — show up daily';
+  // Patch rate
+  const all=S.callHistory;
+  const total=all.length;
+  const patched=all.filter(c=>c.patched).length;
+  if(total>0){
+    const rate=Math.round((patched/total)*100);
+    $('overall-patch-rate').textContent=rate+'%';
+    const byDiff={easy:0,medium:0,hard:0};const byDiffT={easy:0,medium:0,hard:0};
+    all.forEach(c=>{byDiffT[c.difficulty]=(byDiffT[c.difficulty]||0)+1;if(c.patched)byDiff[c.difficulty]=(byDiff[c.difficulty]||0)+1;});
+    $('patch-breakdown').textContent=
+      `🟢 Easy: ${byDiff.easy||0}/${byDiffT.easy||0} patched\n🟡 Medium: ${byDiff.medium||0}/${byDiffT.medium||0} patched\n🔴 Hard: ${byDiff.hard||0}/${byDiffT.hard||0} patched`;
+  }else{$('overall-patch-rate').textContent='—';}
+  renderPatternHistory();
+}
+
+// ── NEWS ──────────────────────────────────────────────────────────
+async function loadNews(){
+  $('news-feed').innerHTML='<div class="sug-loading">Fetching latest AI news...</div>';
+  try{
+    const r=await fetch('https://hn.algolia.com/api/v1/search_by_date?query=artificial+intelligence+AI&tags=story&hitsPerPage=8');
+    const data=await r.json();
+    const titles=(data.hits||[]).filter(h=>h.title&&h.title.toLowerCase().includes('ai')||h.title?.toLowerCase().includes('gpt')||h.title?.toLowerCase().includes('llm')||h.title?.toLowerCase().includes('model')).slice(0,5).map(h=>h.title);
+    if(!titles.length)throw new Error('no stories');
+    if(!S.settings.groqKey){
+      $('news-feed').innerHTML=titles.map(t=>`
+        <div class="news-item">
+          <div class="news-tag">AI Update</div>
+          <div class="news-headline">${esc(t)}</div>
+          <div class="news-what">Add your Groq key in Settings to get easy English explanations of each story.</div>
+        </div>`).join('');
+      return;
+    }
+    const rep=await groq([
+      {role:'system',content:`You are ARIA explaining AI news to Chand — a Pakistani call center agent with basic English. For each headline, write: a simple 2-3 sentence explanation a teenager would understand, AND one sentence on why it matters for someone in his field. Return JSON array ONLY, no markdown: [{"headline":"...","tag":"Voice AI/Chatbots/Jobs/Tools/Big Tech","what":"...","why":"..."}]. Use the original headline exactly.`},
+      {role:'user',content:titles.join('\n')}
+    ],800);
+    let items=[];
+    try{items=JSON.parse(String(rep||'').replace(/```json|```/g,'').trim());}catch(e){throw new Error('parse');}
+    $('news-feed').innerHTML=items.slice(0,5).map(it=>`
+      <div class="news-item">
+        <div class="news-tag">${esc(it.tag||'AI')}</div>
+        <div class="news-headline">${esc(it.headline)}</div>
+        <div class="news-what">${esc(it.what)}</div>
+        <div class="news-why">${esc(it.why)}</div>
+      </div>`).join('');
+  }catch(e){
+    $('news-feed').innerHTML=`
+      <div class="news-item"><div class="news-tag">Voice AI</div><div class="news-headline">Voice AI is getting cheaper and faster every month</div><div class="news-what">Companies like ElevenLabs (the voice in ARIA) are making AI voices that sound exactly like real humans. This technology now costs almost nothing to use.</div><div class="news-why">Your clients on the phone can't tell if they're talking to AI or human. This is why your call center job is evolving fast.</div></div>
+      <div class="news-item"><div class="news-tag">Jobs</div><div class="news-headline">AI is training call center agents 3x faster than traditional methods</div><div class="news-what">Big call centers in the USA and UK are using AI coaches to run thousands of practice calls. Agents who use AI tools learn objection handling in weeks, not months.</div><div class="news-why">You're already doing this with ARIA. You are ahead of most agents in your field right now.</div></div>
+      <div class="news-item"><div class="news-tag">Chatbots</div><div class="news-headline">ChatGPT now has over 100 million daily users</div><div class="news-what">OpenAI's chatbot is now used by more people every day than the entire population of the UK. Businesses are using it to write scripts, train staff, and handle customer queries.</div><div class="news-why">Understanding AI tools gives you an advantage at work. Most of your colleagues don't know how to use these yet.</div></div>
+      <div class="news-item"><div class="news-tag">Tools</div><div class="news-headline">Groq launches the world's fastest AI inference engine</div><div class="news-what">Groq (the AI powering ARIA's brain) can now process language faster than any other system. Your coaching responses come back in under one second because of this.</div><div class="news-why">Fast AI means ARIA can give you live suggestions during real calls in the future — not just mock calls.</div></div>
+      <div class="news-item"><div class="news-tag">Big Tech</div><div class="news-headline">Google and Apple are adding AI assistants to every phone</div><div class="news-what">Both companies announced that their phones will now have AI built directly in — no internet needed. Your phone can soon coach you offline.</div><div class="news-why">In 1-2 years, AI coaching tools like ARIA could work offline on your phone with no API costs at all.</div></div>
+    `;
+  }
+}
+
+// ── STREAK ────────────────────────────────────────────────────────
+function checkStreak(){
+  const today=todayKey();
+  if(S.lastOpen===today)return;
+  const y=new Date();y.setDate(y.getDate()-1);
+  const yk=y.toISOString().slice(0,10);
+  if(S.lastOpen===yk)S.streak=(S.streak||0)+1;
+  else S.streak=1;
+  S.lastOpen=today;save();
+}
+
+// ── BIND ALL EVENTS ───────────────────────────────────────────────
+function bindEvents(){
+  // Splash
+  $('boot-btn').addEventListener('click',()=>{
+    checkStreak();
+    $('splash').style.display='none';
+    $('app').style.display='flex';
+    buildClientSelector();
+    showPatternAlert();
+    loadNews();
+    // Check unlocked difficulties
+    const total=S.callHistory.length;
+    if(total<5){document.querySelector('.diff-btn.medium').style.opacity='.4';document.querySelector('.diff-btn.hard').style.opacity='.4';}
+    else if(total<15){document.querySelector('.diff-btn.hard').style.opacity='.4';}
+  });
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchPage(t.dataset.page)));
+
+  // Difficulty
+  document.querySelectorAll('.diff-btn').forEach(b=>b.addEventListener('click',()=>{
+    const diff=b.dataset.diff;
+    const total=S.callHistory.length;
+    if(diff==='medium'&&total<5){toast('Complete 5 easy calls first to unlock Medium 🟡','warn');return;}
+    if(diff==='hard'&&total<15){toast('Complete 15 calls total to unlock Hard 🔴','warn');return;}
+    document.querySelectorAll('.diff-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    R.difficulty=diff;
+    buildClientSelector();
+  }));
+
+  $('client-type-sel').addEventListener('change',e=>R.clientType=e.target.value);
+  $('start-btn').addEventListener('click',startCall);
+
+  // Agent input
+  $('mic-btn').addEventListener('click',()=>{if(R.listening){try{R.recog.stop();}catch(e){}}else startRecog();});
+  $('send-btn').addEventListener('click',()=>agentTurn($('agent-inp').value));
+  $('agent-inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();agentTurn($('agent-inp').value);}});
+  $('end-btn').addEventListener('click',()=>endCall(true));
+  $('new-call-btn').addEventListener('click',()=>{
+    $('report-card').classList.add('hidden');
+    $('setup-card').classList.remove('hidden');
+    showPatternAlert();
+    renderStats();
+  });
+
+  // Stats
+  $('log-call-btn').addEventListener('click',()=>{todayStats().calls=(todayStats().calls||0)+1;save();renderStats();toast('+1 Call logged 📞','success');});
+  $('log-patch-btn').addEventListener('click',()=>{todayStats().patches=(todayStats().patches||0)+1;save();renderStats();toast('+1 Patch logged 🎯','success');});
+  $('reset-btn').addEventListener('click',()=>{S.byDay[todayKey()]={calls:0,patches:0,mocks:0,patched:0,total:0};save();renderStats();toast('Today reset','warn');});
+
+  // News
+  $('refresh-news-btn').addEventListener('click',loadNews);
+
+  // Settings
+  $('settings-btn').addEventListener('click',()=>{
+    $('inp-groq').value=S.settings.groqKey||'';
+    $('inp-eleven').value=S.settings.elevenKey||'';
+    $('inp-aria-voice').value=S.settings.ariaVoiceId||'';
+    $('inp-client-voice').value=S.settings.clientVoiceId||'';
+    $('settings-modal').classList.remove('hidden');
+  });
+  $('close-settings-btn').addEventListener('click',()=>$('settings-modal').classList.add('hidden'));
+  $('settings-modal').addEventListener('click',e=>{if(e.target===$('settings-modal'))$('settings-modal').classList.add('hidden');});
+  $('save-settings-btn').addEventListener('click',()=>{
+    S.settings.groqKey=$('inp-groq').value.trim();
+    S.settings.elevenKey=$('inp-eleven').value.trim();
+    S.settings.ariaVoiceId=$('inp-aria-voice').value.trim()||'21m00Tcm4TlvDq8ikWAM';
+    S.settings.clientVoiceId=$('inp-client-voice').value.trim()||'ODq5zmih8GrVes37Dizd';
+    save();toast('Settings saved ✅','success');$('settings-modal').classList.add('hidden');
+  });
+
+  // Voice player events
+  const p=$('voice-player');
+  p.addEventListener('play',()=>{R.speechActive=true;});
+  p.addEventListener('pause',()=>{if(R.settingUpAudio)return;R.speechActive=false;if(!R.listening)setOrb('idle');});
+  p.addEventListener('ended',()=>{R.speechActive=false;if(!R.listening)setOrb('idle');});
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+function init(){
+  load();
+  setupRecog();
+  bindEvents();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+window.addEventListener('load',init);
+})();
+</script>
+</body>
+</html>
