@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#080c14"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="ARIA"/>
+<title>ARIA — Call Coach</title>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080c14; --s1:#0d1220; --s2:#111827; --s3:#1a2235;
+  --b1:rgba(255,255,255,0.06); --b2:rgba(255,255,255,0.11); --b3:rgba(255,255,255,0.18);
+  --t1:#f0f4ff; --t2:rgba(220,230,255,0.65); --t3:rgba(180,200,255,0.35);
+  --ac:#5b8dee; --ac2:#7aa8f5; --green:#3dd68c; --red:#f06b6b; --amber:#f5a623; --purple:#b07aff;
+  --blur:blur(20px);
+}
+html,body{min-height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--t1);overflow-x:hidden}
+.hidden{display:none!important}
+
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 100% 60% at 50% -10%,rgba(50,90,200,0.18) 0%,transparent 65%),
+    radial-gradient(ellipse 70% 40% at 0% 100%,rgba(30,60,160,0.12) 0%,transparent 60%),
+    linear-gradient(160deg,#0a0f1e 0%,#080c14 50%,#06090f 100%);}
+#bg::after{content:'';position:absolute;inset:0;
+  background-image:radial-gradient(rgba(91,141,238,0.04) 1px,transparent 1px);background-size:32px 32px;}
+
+#app{position:relative;z-index:1;display:none;flex-direction:column;min-height:100vh;padding-bottom:72px}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:32px;
+  background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(50,90,200,0.15),transparent),#080c14}
+.sp-ring{width:96px;height:96px;border-radius:50%;border:1.5px solid rgba(91,141,238,0.4);display:grid;place-items:center;position:relative}
+.sp-ring::before{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px solid rgba(91,141,238,0.15)}
+.sp-dot{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,#7aa8f5,#3b6fd4);box-shadow:0 0 32px rgba(91,141,238,0.5)}
+.sp-title{font-size:38px;font-weight:700;letter-spacing:-1px;text-align:center}
+.sp-title span{color:var(--ac2)}
+.sp-sub{color:var(--t2);text-align:center;font-size:14px;max-width:260px;line-height:1.7}
+.sp-btn{background:var(--ac);color:#fff;border:none;padding:16px 52px;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 8px 32px rgba(91,141,238,0.35);transition:all .2s}
+.sp-btn:active{transform:scale(.96)}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:40;padding:12px 18px;padding-top:calc(12px + env(safe-area-inset-top));
+  background:rgba(8,12,20,0.85);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between}
+.tb-left{display:flex;align-items:center;gap:10px}
+.tb-orb{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle,#7aa8f5,#3b6fd4);
+  box-shadow:0 0 14px rgba(91,141,238,0.45);transition:all .3s;flex-shrink:0}
+.tb-orb.thinking{animation:spin 1.2s linear infinite;background:conic-gradient(#5b8dee,#7aa8f5,#5b8dee)}
+.tb-orb.speaking{animation:pulse .7s ease-in-out infinite}
+.tb-orb.listening{background:radial-gradient(circle,#3dd68c,#16a361);animation:pulse .6s ease-in-out infinite;box-shadow:0 0 14px rgba(61,214,140,0.45)}
+.tb-name{font-size:17px;font-weight:700;letter-spacing:-.4px}
+.tb-status{font-size:11px;color:var(--t3);font-family:'DM Mono',monospace;letter-spacing:.04em}
+.tb-right{display:flex;gap:6px}
+.icon-btn{background:var(--b1);border:1px solid var(--b2);color:var(--t2);padding:7px 13px;border-radius:10px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.icon-btn:active{background:var(--b2)}
+
+/* TABS */
+.tabs{display:flex;padding:10px 18px 0;gap:6px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--t3);font-family:inherit;transition:all .2s}
+.tab.active{background:var(--b2);color:var(--t1);border-color:var(--b3)}
+
+/* PAGES */
+.page{display:none;flex-direction:column;gap:12px;padding:14px 18px}
+.page.active{display:flex}
+
+/* GLASS CARD */
+.card{background:var(--b1);border:1px solid var(--b2);border-radius:18px;padding:16px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+.ct{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:10px;font-family:'DM Mono',monospace}
+.ct-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+
+/* BUTTONS */
+.btn{padding:13px 18px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .18s;letter-spacing:-.2px}
+.btn:active{transform:scale(.97)}
+.btn-blue{background:var(--ac);color:#fff;box-shadow:0 6px 24px rgba(91,141,238,0.3)}
+.btn-green{background:rgba(61,214,140,0.15);color:var(--green);border:1px solid rgba(61,214,140,0.25)}
+.btn-red{background:rgba(240,107,107,0.12);color:var(--red);border:1px solid rgba(240,107,107,0.2)}
+.btn-ghost{background:var(--b1);color:var(--t1);border:1px solid var(--b2)}
+.btn-sm{padding:8px 14px;font-size:12px;border-radius:10px}
+.btn-full{width:100%}
+.btn-row{display:flex;gap:8px}
+.btn-row .btn{flex:1}
+
+/* SELECT */
+.sel{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:11px 14px;color:var(--t1);font-size:14px;font-family:inherit;outline:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235b8dee'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;background-size:10px}
+
+/* STATUS BAR */
+.status-bar{border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.status-bar.live{background:rgba(240,107,107,0.08);border:1px solid rgba(240,107,107,0.18)}
+.pulse-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pulse-dot.red{background:var(--red);box-shadow:0 0 8px var(--red);animation:pulse .8s ease-in-out infinite}
+
+/* ── CONFIDENCE METER ── */
+.conf-meter{background:linear-gradient(135deg,rgba(91,141,238,0.08),rgba(91,141,238,0.03));border:1px solid rgba(91,141,238,0.2);border-radius:16px;padding:14px}
+.conf-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.conf-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ac2);font-family:'DM Mono',monospace}
+.conf-score{font-size:28px;font-weight:700;letter-spacing:-1px;transition:all .4s}
+.conf-bar-wrap{height:6px;background:var(--b2);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.conf-bar{height:100%;border-radius:3px;transition:width .6s ease,background .4s}
+.conf-verdict{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;display:inline-block}
+.conf-change{font-size:11px;color:var(--t3);margin-left:auto}
+
+/* ── BRIDGE SUGGESTER ── */
+.bridge-box{background:linear-gradient(135deg,rgba(61,214,140,0.08),rgba(61,214,140,0.03));border:1px solid rgba(61,214,140,0.22);border-radius:16px;padding:14px;margin-top:0}
+.bridge-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin-bottom:8px;font-family:'DM Mono',monospace}
+.bridge-answer{background:rgba(61,214,140,0.07);border-left:3px solid var(--green);border-radius:0 10px 10px 0;padding:10px 12px;font-size:13px;line-height:1.7;color:var(--t1);margin-bottom:8px}
+.bridge-line{background:rgba(91,141,238,0.07);border-left:3px solid var(--ac);border-radius:0 10px 10px 0;padding:10px 12px;font-size:13px;line-height:1.7;color:var(--t1)}
+.bridge-lbl-sm{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;font-family:'DM Mono',monospace}
+.bridge-answer .bridge-lbl-sm{color:var(--green)}
+.bridge-line .bridge-lbl-sm{color:var(--ac2)}
+.bridge-empty{color:var(--t3);font-size:13px;font-style:italic}
+
+/* ── REPLY SUGGESTER ── */
+.suggester{background:linear-gradient(135deg,rgba(91,141,238,0.08),rgba(91,141,238,0.03));border:1px solid rgba(91,141,238,0.2);border-radius:16px;padding:14px}
+.sug-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ac2);margin-bottom:10px;font-family:'DM Mono',monospace}
+.sug-opt{background:rgba(91,141,238,0.07);border:1px solid rgba(91,141,238,0.15);border-left:3px solid var(--ac);border-radius:12px;padding:11px 13px;margin-bottom:8px;font-size:13px;line-height:1.65}
+.sug-opt:last-child{margin-bottom:0}
+.sug-num{font-size:10px;font-weight:700;color:var(--ac2);margin-bottom:5px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.08em}
+.sug-note{font-size:11px;color:var(--t2);margin-top:6px;padding-top:6px;border-top:1px solid rgba(91,141,238,0.15);font-style:italic}
+.sug-loading{color:var(--t3);font-size:13px;text-align:center;padding:10px}
+
+/* ── STEP TRACKER ── */
+.step-track{display:flex;flex-direction:column;gap:5px}
+.step-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;border:1px solid transparent;font-size:13px;transition:all .3s}
+.step-item.done{background:rgba(61,214,140,0.05);border-color:rgba(61,214,140,0.15);color:var(--t2)}
+.step-item.active{background:rgba(91,141,238,0.1);border-color:rgba(91,141,238,0.25);color:var(--t1);font-weight:600}
+.step-item.upcoming{color:var(--t3)}
+.step-item.skipped{background:rgba(180,200,255,0.03);border-color:rgba(180,200,255,0.08);color:var(--t3);opacity:.5}
+.step-item.info-step.active{border-color:rgba(176,122,255,0.3);background:rgba(176,122,255,0.08)}
+.step-num{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'DM Mono',monospace}
+.step-item.done .step-num{background:rgba(61,214,140,0.15);color:var(--green)}
+.step-item.active .step-num{background:rgba(91,141,238,0.25);color:var(--ac2)}
+.step-item.upcoming .step-num{background:var(--b1);color:var(--t3)}
+.step-item.skipped .step-num{background:var(--b1);color:var(--t3)}
+
+/* ── CLIENT INFO CARD ── */
+.info-card{background:rgba(176,122,255,0.06);border:1px solid rgba(176,122,255,0.2);border-radius:16px;padding:14px}
+.info-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--purple);margin-bottom:10px;font-family:'DM Mono',monospace}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.info-item{background:rgba(176,122,255,0.06);border:1px solid rgba(176,122,255,0.15);border-radius:10px;padding:8px 10px}
+.info-item-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--purple);font-family:'DM Mono',monospace;margin-bottom:3px;opacity:.7}
+.info-item-val{font-size:13px;font-weight:600;color:var(--t1)}
+.info-item-val.empty{color:var(--t3);font-weight:400;font-style:italic;font-size:12px}
+.info-item.collected{border-color:rgba(61,214,140,0.25);background:rgba(61,214,140,0.04)}
+.info-item.collected .info-item-lbl{color:var(--green)}
+
+/* ── CALL FEED ── */
+.call-feed{display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto;padding-right:2px}
+.call-line{padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.65;animation:fadeIn .2s ease}
+.call-line.client{background:rgba(240,107,107,0.07);border:1px solid rgba(240,107,107,0.14);border-left:3px solid var(--red)}
+.call-line.agent{background:rgba(61,214,140,0.06);border:1px solid rgba(61,214,140,0.12);border-left:3px solid var(--green)}
+.cl-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;font-family:'DM Mono',monospace}
+.call-line.client .cl-label{color:var(--red)}
+.call-line.agent .cl-label{color:var(--green)}
+
+/* ── CALL INPUT ── */
+.call-input-row{display:flex;gap:8px;align-items:stretch}
+.call-input{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:11px 14px;color:var(--t1);font-size:14px;font-family:inherit;outline:none}
+.call-input:focus{border-color:var(--ac)}
+
+/* ── WRAP WARNING ── */
+.wrap-warn{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--amber);display:flex;align-items:center;gap:8px}
+
+/* ── REPORT ── */
+.report-section{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--b2)}
+.report-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.report-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:6px;font-family:'DM Mono',monospace}
+.report-text{font-size:14px;line-height:1.7;color:var(--t1)}
+.score-display{font-size:40px;font-weight:700;text-align:center;letter-spacing:-1px;color:var(--ac2)}
+.stars{font-size:24px;text-align:center;letter-spacing:2px}
+.collected-report{background:rgba(176,122,255,0.06);border:1px solid rgba(176,122,255,0.2);border-radius:14px;padding:14px;margin-bottom:12px}
+.collected-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(176,122,255,0.1);font-size:13px}
+.collected-row:last-child{border-bottom:none}
+.collected-key{color:var(--purple);font-size:11px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em}
+.collected-val{color:var(--t1);font-weight:500}
+.collected-val.miss{color:var(--t3);font-style:italic}
+
+/* ── PATCH RATE / STATS ── */
+.kpi-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.kpi-box{background:var(--b1);border:1px solid var(--b2);border-radius:14px;padding:14px 10px;text-align:center}
+.kpi-n{font-size:28px;font-weight:700;letter-spacing:-1px;line-height:1}
+.kpi-l{font-size:10px;color:var(--t3);margin-top:4px;text-transform:uppercase;letter-spacing:.08em;font-family:'DM Mono',monospace}
+.patch-rate-card{background:linear-gradient(135deg,rgba(61,214,140,0.08),rgba(61,214,140,0.03));border:1px solid rgba(61,214,140,0.2);border-radius:18px;padding:18px}
+.patch-rate-big{font-size:52px;font-weight:700;color:var(--green);line-height:1;letter-spacing:-2px}
+.rate-bar-wrap{height:8px;background:var(--b2);border-radius:4px;overflow:hidden;margin:10px 0 6px}
+.rate-bar{height:100%;background:var(--green);border-radius:4px;transition:width .8s ease}
+.streak-big{background:linear-gradient(135deg,rgba(245,166,35,0.1),rgba(245,166,35,0.04));border:1px solid rgba(245,166,35,0.2);border-radius:18px;padding:18px;display:flex;align-items:center;gap:16px}
+.streak-n{font-size:52px;font-weight:700;color:var(--amber);line-height:1;letter-spacing:-2px}
+.log-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* ── CHECKLIST ── */
+.check-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:12px;border:1px solid var(--b2);background:var(--b1);cursor:pointer;transition:all .2s}
+.check-item.done{background:rgba(61,214,140,0.05);border-color:rgba(61,214,140,0.2)}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--b3);flex-shrink:0;display:grid;place-items:center;font-size:12px;transition:all .2s}
+.check-item.done .check-box{background:var(--green);border-color:var(--green)}
+.check-lbl{font-size:13px;font-weight:500}
+.check-item.done .check-lbl{color:var(--t2)}
+
+/* ── DIFF BADGE ── */
+.diff-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase}
+.diff-easy{background:rgba(61,214,140,0.12);color:var(--green)}
+.diff-medium{background:rgba(245,166,35,0.12);color:var(--amber)}
+.diff-hard{background:rgba(240,107,107,0.12);color:var(--red)}
+
+/* ── OBJECTION CHEAT SHEET ── */
+.obj-item{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(245,166,35,0.1)}
+.obj-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.obj-q{font-size:12px;font-weight:600;color:var(--amber);margin-bottom:4px}
+.obj-a{font-size:13px;color:var(--t2);line-height:1.6}
+
+/* ── NEWS ── */
+.news-item{padding:16px 0;border-bottom:1px solid var(--b2)}
+.news-item:first-child{padding-top:0}
+.news-item:last-child{border-bottom:none;padding-bottom:0}
+.news-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:3px 9px;border-radius:999px;background:rgba(91,141,238,0.12);color:var(--ac2);margin-bottom:8px;font-family:'DM Mono',monospace}
+.news-head{font-size:16px;font-weight:700;line-height:1.45;letter-spacing:-.3px;margin-bottom:8px}
+.news-body{font-size:13px;color:var(--t2);line-height:1.75;margin-bottom:8px}
+.news-explain{background:rgba(245,166,35,0.06);border-left:3px solid var(--amber);border-radius:0 10px 10px 0;padding:10px 12px;font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:8px}
+.news-why{background:rgba(91,141,238,0.07);border-left:3px solid var(--ac);border-radius:0 10px 10px 0;padding:10px 12px;font-size:13px;color:var(--t2);line-height:1.65}
+.news-lbl{font-size:10px;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em;font-family:'DM Mono',monospace}
+.news-loading{text-align:center;padding:32px 0;color:var(--t3);font-size:14px}
+
+/* ── MODAL / SETTINGS ── */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-end}
+.modal-sheet{background:var(--s1);border-radius:24px 24px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:0 0 40px}
+.modal-handle{width:38px;height:4px;background:var(--b3);border-radius:2px;margin:12px auto 0}
+.modal-hdr{padding:16px 20px;border-bottom:1px solid var(--b2);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.modal-body{padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.sf{display:flex;flex-direction:column;gap:6px}
+.sl{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.08em;font-family:'DM Mono',monospace}
+.si{background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:11px 14px;color:var(--t1);font-size:14px;font-family:inherit;outline:none;width:100%}
+.si:focus{border-color:var(--ac)}
+
+/* ── TOAST ── */
+#toasts{position:fixed;top:calc(env(safe-area-inset-top)+64px);left:50%;transform:translateX(-50%);z-index:200;width:calc(100vw - 32px);max-width:360px;pointer-events:none;display:flex;flex-direction:column;gap:6px;align-items:center}
+.toast{padding:10px 16px;border-radius:11px;font-size:13px;font-weight:500;opacity:0;transform:translateY(-8px);transition:all .28s;max-width:100%;text-align:center}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.info{background:rgba(91,141,238,0.15);border:1px solid rgba(91,141,238,0.25);color:var(--ac2)}
+.toast.success{background:rgba(61,214,140,0.12);border:1px solid rgba(61,214,140,0.22);color:var(--green)}
+.toast.warn{background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.2);color:var(--amber)}
+.toast.error{background:rgba(240,107,107,0.1);border:1px solid rgba(240,107,107,0.2);color:var(--red)}
+
+/* ── BOTTOM NAV ── */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:rgba(8,12,20,0.92);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-top:1px solid var(--b2);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--t3);font-size:10px;font-weight:500;font-family:inherit;padding:4px 0;transition:color .2s}
+.nav-btn.active{color:var(--ac)}
+.nav-icon{font-size:21px;line-height:1}
+
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.75;transform:scale(1.08)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes confPop{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--b3);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+<div id="bg"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-ring"><div class="sp-dot"></div></div>
+  <div>
+    <div class="sp-title">AR<span>IA</span></div>
+    <div class="sp-sub">Your personal call center coach. Built to make you elite.</div>
+  </div>
+  <button class="sp-btn" id="boot-btn">Start Training 🎯</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="tb-left">
+      <div class="tb-orb" id="tb-orb"></div>
+      <div>
+        <div class="tb-name">ARIA</div>
+        <div class="tb-status" id="tb-status">Ready</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <button class="icon-btn" id="settings-btn">⚙ Settings</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-page="call">📞 Live Call</button>
+    <button class="tab" data-page="news">📰 AI News</button>
+    <button class="tab" data-page="stats">📊 Stats</button>
+  </div>
+
+  <!-- ══ CALL PAGE ══ -->
+  <div class="page active" id="page-call">
+
+    <!-- Setup -->
+    <div id="setup-section">
+      <div class="card">
+        <div class="ct">Pre-Call Checklist</div>
+        <div style="display:flex;flex-direction:column;gap:6px" id="cl-list">
+          <div class="check-item" data-i="0"><div class="check-box"></div><div class="check-lbl">Smile ready 😊</div></div>
+          <div class="check-item" data-i="1"><div class="check-box"></div><div class="check-lbl">Script reviewed</div></div>
+          <div class="check-item" data-i="2"><div class="check-box"></div><div class="check-lbl">Water bottle nearby</div></div>
+          <div class="check-item" data-i="3"><div class="check-box"></div><div class="check-lbl">Objections fresh in mind</div></div>
+          <div class="check-item" data-i="4"><div class="check-box"></div><div class="check-lbl">Energy 7+/10 ⚡</div></div>
+        </div>
+        <div style="height:10px"></div>
+        <div id="cl-score" style="font-size:13px;color:var(--t2);text-align:center"></div>
+      </div>
+
+      <div class="card">
+        <div class="ct-row">
+          <div class="ct">Client Level</div>
+          <span class="diff-badge diff-easy" id="diff-badge">Level 1</span>
+        </div>
+        <select class="sel" id="client-sel">
+          <optgroup label="🟢 Level 1 — Warm Clients (build confidence)">
+            <option value="l1-friendly">Friendly &amp; Cooperative</option>
+            <option value="l1-confused">Confused but Willing</option>
+            <option value="l1-quiet">Quiet — Short Answers</option>
+            <option value="l1-chatty">Chatty — Talks a Lot</option>
+            <option value="l1-elderly">Elderly — Slow &amp; Patient</option>
+          </optgroup>
+          <optgroup label="🟡 Level 2 — Guarded Clients (realistic)" id="l2-group">
+            <option value="l2-skeptical">Skeptical — Questions Everything</option>
+            <option value="l2-busy">Busy — Short &amp; Distracted</option>
+            <option value="l2-cautious">Privacy-Worried — Careful</option>
+            <option value="l2-handled">Already Handled It</option>
+            <option value="l2-maybe">On the Fence — Undecided</option>
+          </optgroup>
+          <optgroup label="🔴 Level 3 — Hostile Clients (advanced)" id="l3-group">
+            <option value="l3-attorney">Has Attorney — Firm &amp; Curt</option>
+            <option value="l3-angry">Angry &amp; Aggressive</option>
+            <option value="l3-scam">Convinced It's a Scam</option>
+            <option value="l3-trap">Trap Questions — Testing You</option>
+            <option value="l3-recorded">Says He's Recording the Call</option>
+          </optgroup>
+        </select>
+        <div style="height:12px"></div>
+        <button class="btn btn-blue btn-full" id="start-btn">Start Mock Call 📞</button>
+        <div style="height:8px"></div>
+        <div style="font-size:12px;color:var(--t3);text-align:center" id="unlock-msg"></div>
+      </div>
+
+      <!-- Objection quick-ref -->
+      <div class="card">
+        <div class="ct">⚠️ Trap Questions — Quick Reference</div>
+        <div style="background:rgba(245,166,35,0.05);border:1px solid rgba(245,166,35,0.15);border-radius:12px;padding:12px">
+          <div class="obj-item">
+            <div class="obj-q">❓ "Tell me my name if you have my info"</div>
+            <div class="obj-a">"For privacy and security I can't read personal details over the phone — that's to protect you from fraud. Let me verify a couple of quick things with you instead."</div>
+          </div>
+          <div class="obj-item">
+            <div class="obj-q">❓ "Where did you get my information?"</div>
+            <div class="obj-a">"Your name was flagged through accident records. When accidents are reported to police or insurance, claimant info goes into a national compensation database."</div>
+          </div>
+          <div class="obj-item">
+            <div class="obj-q">❓ "Is this a scam?"</div>
+            <div class="obj-a">"I'm not asking for any money or bank details. I'm only verifying whether compensation was delivered to you. 2 minutes, costs you nothing."</div>
+          </div>
+          <div class="obj-item">
+            <div class="obj-q">❓ "I'm recording this call"</div>
+            <div class="obj-a">"Absolutely fine — we record ours too. I'm just calling to make sure your compensation was properly delivered. Is that okay?"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active call -->
+    <div class="hidden" id="call-section">
+
+      <!-- Status bar -->
+      <div class="status-bar live">
+        <div class="pulse-dot red"></div>
+        <span style="font-weight:600">Call In Progress</span>
+        <span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:13px" id="timer">0:00</span>
+        <button class="btn btn-sm btn-red" id="end-btn" style="margin-left:8px;padding:6px 12px">End</button>
+      </div>
+
+      <!-- Wrap warning -->
+      <div class="wrap-warn hidden" id="wrap-warn">⏱ 3 minutes — wrap it up! Move to patch now.</div>
+
+      <!-- CONFIDENCE METER -->
+      <div class="conf-meter">
+        <div class="conf-top">
+          <div class="conf-label">⚡ Confidence Score</div>
+          <div style="display:flex;align-items:baseline;gap:6px">
+            <div class="conf-score" id="conf-score">—</div>
+            <div style="font-size:14px;color:var(--t3)">/10</div>
+            <div class="conf-change" id="conf-change"></div>
+          </div>
+        </div>
+        <div class="conf-bar-wrap"><div class="conf-bar" id="conf-bar" style="width:0%"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="conf-verdict" id="conf-verdict" style="background:var(--b2);color:var(--t3)">Waiting...</span>
+          <span style="font-size:11px;color:var(--t3)" id="conf-tip"></span>
+        </div>
+      </div>
+
+      <!-- BRIDGE SUGGESTER -->
+      <div class="bridge-box">
+        <div class="bridge-label">🌉 Bridge — Answer + Get Back on Script</div>
+        <div id="bridge-content"><div class="bridge-empty">When client asks a question or objects — ARIA will show you the answer AND the bridge line here.</div></div>
+      </div>
+
+      <!-- Script progress -->
+      <div class="card">
+        <div class="ct">Script Progress</div>
+        <div class="step-track" id="step-track"></div>
+      </div>
+
+      <!-- Reply Suggester -->
+      <div class="suggester">
+        <div class="sug-title">💡 Script Guide + AI Suggestions</div>
+        <div id="sug-content"><div class="sug-loading">Waiting for client...</div></div>
+      </div>
+
+      <!-- Client info -->
+      <div class="info-card">
+        <div class="info-label">📋 Client Info Collected</div>
+        <div class="info-grid">
+          <div class="info-item" id="info-firstname"><div class="info-item-lbl">First Name</div><div class="info-item-val empty" id="val-firstname">Not yet</div></div>
+          <div class="info-item" id="info-lastname"><div class="info-item-lbl">Last Name</div><div class="info-item-val empty" id="val-lastname">Not yet</div></div>
+          <div class="info-item" id="info-zipcode"><div class="info-item-lbl">ZIP Code</div><div class="info-item-val empty" id="val-zipcode">Not yet</div></div>
+          <div class="info-item" id="info-accdate"><div class="info-item-lbl">Accident Date</div><div class="info-item-val empty" id="val-accdate">Not yet</div></div>
+          <div class="info-item" id="info-phone"><div class="info-item-lbl">Phone</div><div class="info-item-val empty" id="val-phone">Not yet</div></div>
+          <div class="info-item" id="info-state"><div class="info-item-lbl">State</div><div class="info-item-val empty" id="val-state">Not yet</div></div>
+        </div>
+      </div>
+
+      <!-- Call Feed -->
+      <div class="card">
+        <div class="ct">Call Feed</div>
+        <div class="call-feed" id="call-feed"></div>
+      </div>
+
+      <!-- Input -->
+      <div class="card">
+        <div class="ct">Your Turn</div>
+        <div class="call-input-row">
+          <button class="btn btn-green btn-sm" id="mic-btn">🎤 Speak</button>
+          <input class="call-input" id="call-input" placeholder="Or type your response..."/>
+          <button class="btn btn-ghost btn-sm" id="send-btn">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post-call report -->
+    <div class="hidden" id="report-section">
+      <div class="card">
+        <div class="ct">Call Report</div>
+        <div id="report-body"></div>
+        <div style="height:14px"></div>
+        <button class="btn btn-blue btn-full" id="new-call-btn">New Call 📞</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ NEWS PAGE ══ -->
+  <div class="page" id="page-news">
+    <div class="card">
+      <div class="ct-row">
+        <div class="ct">Daily AI Updates — Super Simple</div>
+        <button class="btn btn-sm btn-ghost" id="refresh-btn" style="font-size:11px;padding:6px 12px">Refresh</button>
+      </div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.6">3–5 real stories. No jargon. Explained simply.</div>
+      <div id="news-feed"><div class="news-loading">⏳ Loading today's AI news...</div></div>
+    </div>
+  </div>
+
+  <!-- ══ STATS PAGE ══ -->
+  <div class="page" id="page-stats">
+
+    <!-- Patch Rate -->
+    <div class="patch-rate-card">
+      <div class="ct-row" style="margin-bottom:6px">
+        <div style="font-size:13px;font-weight:700">Patch Rate 🎯</div>
+        <div style="font-size:11px;color:var(--t2)" id="patch-fraction">0 / 0 calls</div>
+      </div>
+      <div class="patch-rate-big" id="patch-rate-pct">0%</div>
+      <div class="rate-bar-wrap"><div class="rate-bar" id="rate-bar" style="width:0%"></div></div>
+      <div style="font-size:12px;color:var(--t2)" id="patch-target">Target: 30% → Good. 50% → Elite.</div>
+    </div>
+
+    <!-- Streak -->
+    <div class="streak-big">
+      <div class="streak-n" id="streak-n">0</div>
+      <div>
+        <div style="font-size:16px;font-weight:700">Day Streak 🔥</div>
+        <div style="font-size:13px;color:var(--t2);margin-top:3px" id="streak-sub">Show up daily</div>
+      </div>
+    </div>
+
+    <!-- Today -->
+    <div class="card">
+      <div class="ct">Today</div>
+      <div class="kpi-row">
+        <div class="kpi-box"><div class="kpi-n" id="s-calls" style="color:var(--ac2)">0</div><div class="kpi-l">Calls</div></div>
+        <div class="kpi-box"><div class="kpi-n" id="s-patches" style="color:var(--green)">0</div><div class="kpi-l">Patches</div></div>
+        <div class="kpi-box"><div class="kpi-n" id="s-mocks" style="color:var(--amber)">0</div><div class="kpi-l">Mocks</div></div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="log-row">
+        <button class="btn btn-ghost" id="log-call">+ Real Call</button>
+        <button class="btn btn-green" id="log-patch">+ Patch 🎯</button>
+      </div>
+    </div>
+
+    <!-- All-time -->
+    <div class="card">
+      <div class="ct">All-Time</div>
+      <div class="kpi-row">
+        <div class="kpi-box"><div class="kpi-n" id="total-mocks" style="color:var(--ac2)">0</div><div class="kpi-l">Mocks</div></div>
+        <div class="kpi-box"><div class="kpi-n" id="total-patches-all" style="color:var(--green)">0</div><div class="kpi-l">Patches</div></div>
+        <div class="kpi-box"><div class="kpi-n" id="avg-conf" style="color:var(--amber)">—</div><div class="kpi-l">Avg Conf</div></div>
+      </div>
+      <div style="height:8px"></div>
+      <div style="font-size:12px;color:var(--t2);text-align:center" id="diff-progress"></div>
+    </div>
+
+    <div class="card">
+      <button class="btn btn-ghost btn-full" id="reset-btn" style="color:var(--red);border-color:rgba(240,107,107,0.2)">Reset Today's Stats</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal hidden" id="settings-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-hdr">
+      <div class="modal-title">Settings</div>
+      <button class="btn btn-sm btn-ghost" id="close-settings">Done</button>
+    </div>
+    <div class="modal-body">
+      <div class="sf"><div class="sl">Groq API Key</div><input class="si" id="si-groq" type="password" placeholder="gsk_..."/><div style="font-size:11px;color:var(--t3)">Free at console.groq.com — powers all AI</div></div>
+      <div class="sf"><div class="sl">ElevenLabs API Key</div><input class="si" id="si-eleven" type="password" placeholder="Your key..."/><div style="font-size:11px;color:var(--t3)">Free at elevenlabs.io — voice only (optional)</div></div>
+      <div class="sf"><div class="sl">ARIA Voice ID</div><input class="si" id="si-av" type="text" placeholder="21m00Tcm4TlvDq8ikWAM"/></div>
+      <div class="sf"><div class="sl">Client Voice ID</div><input class="si" id="si-cv" type="text" placeholder="ODq5zmih8GrVes37Dizd"/></div>
+      <div style="background:rgba(91,141,238,0.07);border:1px solid rgba(91,141,238,0.15);border-radius:12px;padding:12px;font-size:12px;color:var(--t2);line-height:1.65">🔒 Keys stored on this device only. Never sent anywhere except the API.</div>
+      <button class="btn btn-blue btn-full" id="save-settings">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="nav-btn active" data-page="call"><span class="nav-icon">📞</span>Live Call</button>
+  <button class="nav-btn" data-page="news"><span class="nav-icon">📰</span>AI News</button>
+  <button class="nav-btn" data-page="stats"><span class="nav-icon">📊</span>Stats</button>
+</nav>
+<audio id="player" preload="auto"></audio>
+
+<script>
+(() => {
+const KEY = 'aria-v6';
+
+// ── SCRIPT STEPS ─────────────────────────────────────────
+// Note: 'legaldocs' is conditionally inserted only when client confirms they have an attorney
+const BASE_STEPS = [
+  {id:'opener',    label:'Opener',            short:'Introduce yourself',          you:"Hello, my name is Mark. How are you doing today?"},
+  {id:'reason',    label:'Reason for Call',   short:'Compensation not delivered',  you:"I'm calling about a car accident from last year — it looks like your compensation money may not have been fully delivered to you yet. Does that ring a bell?"},
+  {id:'attorney',  label:'Attorney Check',    short:'Any attorney on the case?',   you:"Just to confirm — is there any attorney currently working on your case?"},
+  // legaldocs injected here dynamically if client says YES to attorney
+  {id:'fault',     label:'Fault Check',       short:'Who was at fault?',           you:"According to the police report, who was placed at fault — you or the other person?"},
+  {id:'ticket',    label:'Police Ticket',     short:'Did you get a police ticket?', you:"Did you receive any ticket from the police at the scene? [If YES → hang up politely]"},
+  {id:'medical',   label:'Medical Treatment', short:'Any medical treatment?',      you:"Did you receive any medical treatment after the accident? [If NO → hang up]"},
+  {id:'pain',      label:'Pain Check',        short:'Back/neck/shoulder pain?',    you:"Did you experience any pain — back pain, neck pain, or shoulder pain? [If NO → hang up]"},
+  {id:'painow',    label:'Current Pain',      short:'Still in pain now?',          you:"Oh I'm so sorry to hear that. How are you feeling now — better, or still having those pains?"},
+  {id:'collect',   label:'Collect Info',      short:'Get name, ZIP, date, phone',  you:"That's great — I just need a few quick details to pull up your file. Can I get your first and last name, your ZIP code, and roughly when the accident happened — 2025 or 2026?", isInfoStep:true},
+  {id:'patch',     label:'Patch to Specialist', short:'Transfer now',             you:"Perfect — that's all I need. Let me patch you through to my senior specialist right now who will walk you through getting your full compensation."},
+];
+const LEGALDOCS_STEP = {id:'legaldocs', label:'Legal Docs', short:'Did you sign legal docs?', you:"Did you actually sign a legal representation agreement with them? [If YES & signed → hang up politely]"};
+
+// ── CLIENT PERSONALITIES ──────────────────────────────────
+const PERSONALITIES = {
+  'l1-friendly': {label:'Friendly & Cooperative', diff:'easy',
+    desc:'Warm, trusting, answers quickly. Barely any pushback. Easy to move through script.'},
+  'l1-confused': {label:'Confused but Willing', diff:'easy',
+    desc:'A little confused about the call but willing to listen. Asks simple questions.'},
+  'l1-quiet': {label:'Quiet — Short Answers', diff:'easy',
+    desc:'Gives very short answers (yes, no, okay). Not rude, just quiet. Easy to guide.'},
+  'l1-chatty': {label:'Chatty', diff:'easy',
+    desc:'Talks a lot, goes off-topic sometimes. But cooperative and friendly overall.'},
+  'l1-elderly': {label:'Elderly & Patient', diff:'easy',
+    desc:'Older person. Speaks slowly, may ask you to repeat. Very trusting and patient.'},
+  'l2-skeptical': {label:'Skeptical', diff:'medium',
+    desc:'Questions most things. Asks "how do I know this is real?" type questions. Can be convinced.'},
+  'l2-busy': {label:'Busy & Distracted', diff:'medium',
+    desc:'Keeps saying "I don\'t have time". Short clipped answers. You must stay very concise.'},
+  'l2-cautious': {label:'Privacy-Worried', diff:'medium',
+    desc:'Very careful about giving personal info. Worried about data. Needs reassurance.'},
+  'l2-handled': {label:'Already Handled It', diff:'medium',
+    desc:'Claims everything is already settled. You need to probe whether they got full amount.'},
+  'l2-maybe': {label:'On the Fence', diff:'medium',
+    desc:'Undecided. Sometimes interested, sometimes not. Needs gentle convincing.'},
+  'l3-attorney': {label:'Has Attorney', diff:'hard',
+    desc:'Has an attorney. Firm and curt. Will mention it immediately. Hard to keep on the line.'},
+  'l3-angry': {label:'Angry & Aggressive', diff:'hard',
+    desc:'Annoyed, almost rude. Will hang up if you stumble. Every word must be confident.'},
+  'l3-scam': {label:'Convinced It\'s a Scam', diff:'hard',
+    desc:'Insists this is a scam call. Very suspicious. You must calmly but firmly reassure.'},
+  'l3-trap': {label:'Trap Questions', diff:'hard',
+    desc:'Deliberately tests you: "Tell me my name", "Where did you get my number?", "Prove you\'re legit". Needs perfect deflections with smooth bridges back.'},
+  'l3-recorded': {label:'Recording the Call', diff:'hard',
+    desc:'Says "I\'m recording this call." Wants to catch you saying something wrong. Be careful and professional.'},
+};
+
+// ── UNIVERSAL DEFLECTIONS ─────────────────────────────────
+const UNIVERSAL_DEFLECTIONS = [
+  {trigger:/tell me my name|what.?s my name|if you have my (info|number|details)/i,
+   answer:"I have your file flagged here, but for privacy and security I'm not allowed to read personal information over the phone — that actually protects you from fraud.",
+   bridge:"Can I just verify a couple of quick details with you instead?"},
+  {trigger:/what.?s my address|tell me my address/i,
+   answer:"Our policy is we verify — not reveal — personal details over the phone. This is standard procedure to protect you.",
+   bridge:"Can I just confirm a couple of things to make sure we have the right file?"},
+  {trigger:/where did you get (my|this|the) (number|info|information|details)/i,
+   answer:"Your name was flagged through accident records. When accidents are reported to police or insurance, the claimant info goes into a national compensation database — that's how your file was flagged.",
+   bridge:"I'm just calling to make sure that compensation was actually delivered to you. Can I ask — were you involved in an accident in the past couple of years?"},
+  {trigger:/is this a scam|sounds like a scam|this is a scam/i,
+   answer:"That's completely fair — I'm not asking for any money, bank details, or passwords. I'm only verifying whether compensation money was delivered to you.",
+   bridge:"It takes 2 minutes and costs you nothing. Can I just ask one quick question?"},
+  {trigger:/i.?m recording|recording this call/i,
+   answer:"Absolutely fine — we record our calls too for quality purposes. I'm just calling about potential compensation money.",
+   bridge:"Is that okay? It'll only take a couple of minutes."},
+  {trigger:/how did you get my number|where did you get my number/i,
+   answer:"Your number was on file linked to the accident report. We reach out to make sure claimants receive what they're owed.",
+   bridge:"I just want to confirm — were you involved in a vehicle accident recently?"},
+  {trigger:/i don.?t trust (you|this)|prove (you.?re|this is) (legit|real|legitimate)/i,
+   answer:"I understand completely — I'm not asking for any payment or sensitive information. All I need to do is verify a couple of basic details.",
+   bridge:"Would it be okay if I asked just one quick question to check your file?"},
+];
+
+// ── STATE ────────────────────────────────────────────────
+const DS = {
+  settings:{groqKey:'',elevenKey:'',aVoice:'21m00Tcm4TlvDq8ikWAM',cVoice:'ODq5zmih8GrVes37Dizd'},
+  byDay:{}, streak:0, lastOpen:'', totalMocks:0,
+  allPatches:0, allCalls:0, confScores:[], checkDone:[]
+};
+let S = JSON.parse(JSON.stringify(DS));
+let mock = {
+  active:false, history:[], step:0, type:'l1-friendly',
+  seconds:0, timer:null, info:{}, secretInfo:null,
+  hasAttorney:false, legaldocsInserted:false,
+  confScore:5, confHistory:[], patched:false
+};
+let R = {thinking:false,speechActive:false,settingUpAudio:false,listening:false,speechUrl:'',recognition:null,hasSpeech:false};
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function load(){
+  try{
+    const raw=localStorage.getItem(KEY);if(!raw)return;
+    const p=JSON.parse(raw);
+    S=Object.assign({},DS,p);
+    S.settings=Object.assign({},DS.settings,p.settings||{});
+    S.checkDone=p.checkDone||[];
+    S.confScores=p.confScores||[];
+  }catch(e){S=JSON.parse(JSON.stringify(DS));}
+}
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const todayKey=()=>new Date().toISOString().slice(0,10);
+function todayStats(){const k=todayKey();if(!S.byDay[k])S.byDay[k]={calls:0,patches:0,mocks:0};return S.byDay[k];}
+function getDiff(){const t=S.totalMocks||0;return t<8?'easy':t<20?'medium':'hard';}
+
+// ── ACTIVE STEPS (with legaldocs conditionally inserted) ──
+function getActiveSteps(){
+  const steps=[...BASE_STEPS];
+  if(mock.hasAttorney && !steps.find(s=>s.id==='legaldocs')){
+    const atIdx=steps.findIndex(s=>s.id==='attorney');
+    steps.splice(atIdx+1,0,LEGALDOCS_STEP);
+  }
+  return steps;
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+function toast(msg,type='info'){
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;el.textContent=msg;
+  $('toasts').appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},3500);
+}
+
+// ── ORB ────────────────────────────────────────────────────
+function setOrb(s){
+  $('tb-orb').className=`tb-orb ${s==='idle'?'':s}`;
+  $('tb-status').textContent=s==='thinking'?'Thinking..':s==='speaking'?'Speaking..':s==='listening'?'Listening..':'Ready';
+}
+
+// ── PAGE NAV ───────────────────────────────────────────────
+function goPage(name){
+  document.querySelectorAll('.tab,.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===name));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===`page-${name}`));
+  if(name==='news')loadNews();
+  if(name==='stats')renderStats();
+}
+
+// ── CONFIDENCE METER ──────────────────────────────────────
+function updateConfidence(delta, reason=''){
+  const prev = mock.confScore;
+  mock.confScore = Math.max(1, Math.min(10, mock.confScore + delta));
+  mock.confHistory.push(mock.confScore);
+
+  const score = mock.confScore;
+  const pct = (score/10)*100;
+  const el = $('conf-score');
+  const bar = $('conf-bar');
+  const verdict = $('conf-verdict');
+  const tip = $('conf-tip');
+  const change = $('conf-change');
+
+  el.textContent = score;
+  el.style.color = score>=7?'var(--green)':score>=4?'var(--amber)':'var(--red)';
+  el.style.animation = 'confPop .3s ease';
+  setTimeout(()=>el.style.animation='',300);
+
+  bar.style.width = pct+'%';
+  bar.style.background = score>=7?'var(--green)':score>=4?'var(--amber)':'var(--red)';
+
+  if(score>=8){verdict.textContent='Elite 🔥';verdict.style.background='rgba(61,214,140,0.15)';verdict.style.color='var(--green)';}
+  else if(score>=6){verdict.textContent='Strong 💪';verdict.style.background='rgba(91,141,238,0.15)';verdict.style.color='var(--ac2)';}
+  else if(score>=4){verdict.textContent='Okay ⚡';verdict.style.background='rgba(245,166,35,0.12)';verdict.style.color='var(--amber)';}
+  else{verdict.textContent='Struggling ⚠️';verdict.style.background='rgba(240,107,107,0.1)';verdict.style.color='var(--red)';}
+
+  if(delta>0)change.textContent='+'+delta+' ▲';
+  else if(delta<0)change.textContent=delta+' ▼';
+  else change.textContent='';
+  change.style.color=delta>0?'var(--green)':delta<0?'var(--red)':'var(--t3)';
+
+  if(reason)tip.textContent=reason;
+}
+
+// ── BRIDGE DETECTOR ───────────────────────────────────────
+function detectBridge(clientLine){
+  for(const d of UNIVERSAL_DEFLECTIONS){
+    if(d.trigger.test(clientLine)){
+      return d;
+    }
+  }
+  return null;
+}
+
+function renderBridge(deflection){
+  if(!deflection){
+    $('bridge-content').innerHTML='<div class="bridge-empty">No trap detected. Follow the script guide below. ✅</div>';
+    return;
+  }
+  $('bridge-content').innerHTML=`
+    <div class="bridge-answer">
+      <div class="bridge-lbl-sm">✅ Answer the question — say this:</div>
+      ${esc(deflection.answer)}
+    </div>
+    <div class="bridge-line">
+      <div class="bridge-lbl-sm">🌉 Then bridge back — say this:</div>
+      ${esc(deflection.bridge)}
+    </div>`;
+}
+
+// ── VOICE ─────────────────────────────────────────────────
+function deviceSpeak(text){
+  return new Promise((res,rej)=>{
+    if(!window.speechSynthesis){rej();return;}
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text.slice(0,300));
+    u.lang='en-US';u.rate=0.92;
+    const vs=window.speechSynthesis.getVoices();
+    const v=vs.find(v=>v.lang.startsWith('en')&&v.name.toLowerCase().includes('female'))||vs.find(v=>v.lang.startsWith('en-US'))||null;
+    if(v)u.voice=v;
+    u.onend=res;u.onerror=rej;
+    window.speechSynthesis.speak(u);
+  });
+}
+async function speak(text,role='assistant'){
+  const t=String(text||'').replace(/\s+/g,' ').trim().split(/(?<=[.!?])\s+/).slice(0,4).join(' ');
+  if(!t)return;
+  if(!S.settings.elevenKey){try{await deviceSpeak(t);}catch(e){}return;}
+  const base='https://api.elevenlabs.io/v1';
+  const vid=role==='client'?(S.settings.cVoice||'ODq5zmih8GrVes37Dizd'):(S.settings.aVoice||'21m00Tcm4TlvDq8ikWAM');
+  try{
+    R.settingUpAudio=true;R.speechActive=true;setOrb('speaking');
+    const res=await fetch(`${base}/text-to-speech/${vid}`,{
+      method:'POST',headers:{'Content-Type':'application/json','xi-api-key':S.settings.elevenKey,'Accept':'audio/mpeg'},
+      body:JSON.stringify({text:t,model_id:'eleven_flash_v2_5',voice_settings:{stability:0.5,similarity_boost:0.75}})
+    });
+    if(!res.ok)throw new Error('EL'+res.status);
+    const blob=await res.blob();
+    if(R.speechUrl)URL.revokeObjectURL(R.speechUrl);
+    R.speechUrl=URL.createObjectURL(blob);
+    const pl=$('player');
+    R.settingUpAudio=true;pl.pause();pl.src=R.speechUrl;pl.currentTime=0;R.settingUpAudio=false;
+    await pl.play();
+    await new Promise((res,rej)=>{
+      const done=()=>{cleanup();res();};
+      const cleanup=()=>{pl.removeEventListener('ended',done);pl.removeEventListener('pause',done);};
+      pl.addEventListener('ended',done,{once:true});pl.addEventListener('pause',done,{once:true});
+    });
+  }catch(err){try{await deviceSpeak(t);}catch(e2){}}
+  finally{R.settingUpAudio=false;R.speechActive=false;if(!R.listening)setOrb('idle');}
+}
+
+// ── GROQ ─────────────────────────────────────────────────
+async function groq(msgs,maxTok=400){
+  const key=S.settings.groqKey;
+  if(!key)throw new Error('NO_KEY');
+  const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxTok,temperature:0.75,messages:msgs})
+  });
+  if(!r.ok){
+    if(r.status===401)throw new Error('INVALID_KEY');
+    if(r.status===429)throw new Error('RATE_LIMIT');
+    throw new Error('GROQ_ERR');
+  }
+  return((await r.json()).choices||[])[0]?.message?.content||'';
+}
+
+// ── SPEECH RECOGNITION ───────────────────────────────────
+function setupRecog(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR)return;
+  R.hasSpeech=true;
+  R.recognition=new SR();
+  R.recognition.lang='en-US';R.recognition.interimResults=false;R.recognition.continuous=false;
+  R.recognition.onstart=()=>{R.listening=true;setOrb('listening');$('mic-btn').textContent='🔴 Listening';};
+  R.recognition.onerror=()=>{R.listening=false;setOrb('idle');$('mic-btn').textContent='🎤 Speak';};
+  let final='';
+  R.recognition.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)final+=e.results[i][0].transcript+' ';};
+  R.recognition.onend=async()=>{
+    R.listening=false;$('mic-btn').textContent='🎤 Speak';if(!R.speechActive)setOrb('idle');
+    const spoken=final.trim();final='';
+    if(spoken&&mock.active)await agentTurn(spoken);
+  };
+}
+function startRecog(){
+  if(!R.hasSpeech){toast('Speech not supported — type instead','warn');return;}
+  try{R.recognition.start();}catch(e){}
+}
+
+// ── CLIENT PROMPT ─────────────────────────────────────────
+function clientPrompt(){
+  const p = PERSONALITIES[mock.type]||PERSONALITIES['l1-friendly'];
+  const diff = p.diff;
+  const diffGuide = diff==='easy'
+    ?'Be cooperative. Answer questions quickly. Very minimal pushback. Easy to qualify and patch. Call should flow in 90 seconds.'
+    :diff==='medium'
+    ?'Show mild hesitation on 1-2 questions. Ask 1 realistic question back. Stay on the line but make agent work a little.'
+    :'Be skeptical and difficult. Push back hard. Ask trap questions naturally. Short clipped answers. If agent sounds weak or stumbles, respond with HANG_UP.';
+  if(!mock.secretInfo)mock.secretInfo={
+    firstname:['Sarah','Michael','Jennifer','David','Jessica','Robert','Ashley','James','Maria','John'][Math.floor(Math.random()*10)],
+    lastname:['Johnson','Williams','Brown','Davis','Miller','Wilson','Moore','Taylor','Anderson','Thomas'][Math.floor(Math.random()*10)],
+    zipcode:['90210','10001','77001','30301','60601','85001','33101','94102','19103','80201'][Math.floor(Math.random()*10)],
+    year:['2024','2025'][Math.floor(Math.random()*2)],
+  };
+  return `You are a real American client receiving a cold call about car accident compensation. Your private info: name ${mock.secretInfo.firstname} ${mock.secretInfo.lastname}, ZIP ${mock.secretInfo.zipcode}, accident in ${mock.secretInfo.year}.
+
+CHARACTER: ${p.desc}
+DIFFICULTY: ${diffGuide}
+
+STRICT RULES:
+1. MAX 1-2 short sentences per reply — never longer.
+2. If agent should hang up (e.g. you say you got a police ticket, or you signed legal docs with attorney), reply with exactly: HANG_UP
+3. Only answer what was directly asked. Don't volunteer extra info.
+4. React to tone — confident warm agent = softer response. Nervous or robotic agent = more suspicious.
+5. If agent asks for your name — give first name only first. Give last name only if asked separately.
+6. If agent asks for ZIP — give it if they sound professional.
+7. NEVER break character. You are always the client.
+8. If you have attorney AND agent asks if you signed legal docs — say yes you signed if difficulty is hard, maybe/not sure if medium.`;
+}
+
+// ── STEP TRACKER ─────────────────────────────────────────
+function renderSteps(){
+  const steps = getActiveSteps();
+  const track=$('step-track');
+  track.innerHTML=steps.map((s,i)=>{
+    let state=i<mock.step?'done':i===mock.step?'active':'upcoming';
+    const extra = s.isInfoStep?'info-step':'';
+    const icon = i<mock.step?'✓': s.isInfoStep?'📋':(i+1);
+    return`<div class="step-item ${state} ${extra}">
+      <div class="step-num">${icon}</div>
+      <div>
+        <div style="font-size:13px">${esc(s.label)}</div>
+        ${i===mock.step?`<div style="font-size:11px;color:var(--t2);margin-top:2px">${esc(s.short)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CALL FEED ─────────────────────────────────────────────
+function renderFeed(){
+  const feed=$('call-feed');
+  if(!mock.history.length){feed.innerHTML='<div style="color:var(--t3);font-size:13px">Call feed will appear here...</div>';return;}
+  feed.innerHTML=mock.history.map(m=>`
+    <div class="call-line ${m.role==='assistant'?'client':'agent'}">
+      <div class="cl-label">${m.role==='assistant'?'Client':'You'}</div>${esc(m.content)}
+    </div>`).join('');
+  feed.scrollTop=feed.scrollHeight;
+}
+
+// ── CLIENT INFO EXTRACTION ────────────────────────────────
+function extractInfo(agentLine, clientLine){
+  const full = agentLine+' '+clientLine;
+  const fn=full.match(/(?:first\s*name|my\s*name(?:'s)?\s*is|name\s*is|i.?m|i\s+am|this\s+is)\s+([A-Z][a-z]{1,15})/i);
+  if(fn&&!mock.info.firstname)setInfo('firstname',fn[1]);
+  const ln=full.match(/last\s*name(?:\s*is)?\s+([A-Z][a-z]{1,20})/i);
+  if(ln&&!mock.info.lastname)setInfo('lastname',ln[1]);
+  const zip=full.match(/\b(\d{5})\b/);
+  if(zip&&!mock.info.zipcode)setInfo('zipcode',zip[1]);
+  const yr=full.match(/\b(202[0-9])\b/);
+  if(yr&&!mock.info.accdate)setInfo('accdate',yr[1]);
+  const ph=full.match(/\b(\d{3}[\s\-.]\d{3}[\s\-.]\d{4}|\d{10})\b/);
+  if(ph&&!mock.info.phone)setInfo('phone',ph[1]);
+  const states=['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
+  const sm=full.match(new RegExp('\\b('+states.join('|')+')\\b'));
+  if(sm&&!mock.info.state)setInfo('state',sm[1]);
+}
+function setInfo(field,val){
+  mock.info[field]=val;
+  const el=$(`val-${field}`),card=$(`info-${field}`);
+  if(el){el.textContent=val;el.classList.remove('empty');}
+  if(card)card.classList.add('collected');
+  const labels={firstname:'First name ✓',lastname:'Last name ✓',zipcode:'ZIP ✓',accdate:'Date ✓',phone:'Phone ✓',state:'State ✓'};
+  toast(labels[field]||'Info ✓','success');
+}
+function renderInfoCard(){
+  ['firstname','lastname','zipcode','accdate','phone','state'].forEach(f=>{
+    const el=$(`val-${f}`),card=$(`info-${f}`);
+    if(!el||!card)return;
+    if(mock.info[f]){el.textContent=mock.info[f];el.classList.remove('empty');card.classList.add('collected');}
+    else{el.textContent='Not yet';el.classList.add('empty');card.classList.remove('collected');}
+  });
+}
+
+// ── ATTORNEY DETECTION ────────────────────────────────────
+function detectAttorney(clientLine){
+  return /\b(yes|yeah|yep|i\s+do|i\s+have|got\s+(an|a)\s+|working\s+with|my\s+|have\s+an?)\s*(attorney|lawyer|legal|counsel|law\s+firm)/i.test(clientLine)
+    || /attorney|lawyer/i.test(clientLine) && /yes|yeah|yep|have|got|working/i.test(clientLine);
+}
+
+// ── SUGGESTIONS ──────────────────────────────────────────
+async function genSuggestions(clientLine){
+  const steps = getActiveSteps();
+  const step = steps[Math.min(mock.step, steps.length-1)];
+
+  // Detect bridge situation first
+  const bridge = detectBridge(clientLine);
+  renderBridge(bridge);
+
+  // Adjust confidence based on client reaction
+  const isAggressive = /hang\s+up|stop\s+calling|scam|fraud|not\s+interested|go\s+away/i.test(clientLine);
+  const isPositive = /okay|sure|yes|alright|go\s+ahead|sounds\s+good/i.test(clientLine);
+  if(bridge) updateConfidence(-1, 'Trap question — deflect well');
+  else if(isAggressive) updateConfidence(-1, 'Stay calm and confident');
+  else if(isPositive) updateConfidence(+1, 'Client is warming up');
+
+  // Show script guide immediately
+  $('sug-content').innerHTML=`
+    <div style="font-size:11px;color:var(--ac2);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:'DM Mono',monospace">📜 ${esc(step.label)}</div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:10px;padding:9px 11px;background:rgba(91,141,238,0.06);border-radius:8px;border-left:2px solid var(--ac);line-height:1.65">${esc(step.you)}</div>
+    <div style="color:var(--t3);font-size:12px">Getting AI suggestions...</div>`;
+
+  if(!S.settings.groqKey){
+    $('sug-content').innerHTML=`
+      <div style="font-size:11px;color:var(--ac2);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:'DM Mono',monospace">📜 ${esc(step.label)}</div>
+      <div style="font-size:12px;color:var(--t2);padding:9px 11px;background:rgba(91,141,238,0.06);border-radius:8px;border-left:2px solid var(--ac);line-height:1.65">${esc(step.you)}</div>
+      <div style="font-size:12px;color:var(--t3);margin-top:8px">Add Groq key in Settings for live AI coaching.</div>`;
+    return;
+  }
+  try{
+    const isCollect = step.id==='collect';
+    const infoSoFar = Object.entries(mock.info).filter(([k,v])=>v).map(([k,v])=>`${k}=${v}`).join(', ')||'none yet';
+    const bridgeCtx = bridge?`\nIMPORTANT: Client asked a trap/deflection question: "${clientLine}". After giving the deflection answer, the reply must naturally bridge back to the script question: "${step.you}"`:'';
+    const isInfoSuggestion = isCollect?`\nThis is the info-collection step. Info collected so far: ${infoSoFar}. Naturally ask for the missing fields (first name, last name, ZIP, accident year) in a friendly conversational way.`:'';
+
+    const systemPrompt=`You are ARIA coaching an agent named Mark on a live cold call. Script step: ${step.label}. Script line: "${step.you}". Client just said: "${clientLine}".${bridgeCtx}${isInfoSuggestion}
+
+Give exactly 2 reply options Mark can speak RIGHT NOW. Rules:
+- Max 2 sentences each option
+- Warm, confident, American English
+- Each option must END by naturally leading into the next script question (that's the bridge)
+- If client asked a challenge/objection, first address it briefly then pivot to script
+- Format EXACTLY (no extra text):
+OPT_A: [full reply]
+TIP_A: [one-line coaching note]
+OPT_B: [full reply]
+TIP_B: [one-line coaching note]`;
+
+    const rep=await groq([{role:'system',content:systemPrompt},{role:'user',content:'Go.'}],250);
+    const get=p=>{const m=rep.match(new RegExp(p+':\\s*(.+?)(?=\\n[A-Z_]+:|$)','s'));return m?m[1].trim():'';};
+    const oa=get('OPT_A'),ta=get('TIP_A'),ob=get('OPT_B'),tb=get('TIP_B');
+
+    // Missing info reminder for collect step
+    let infoReminder='';
+    if(isCollect){
+      const missing=['firstname','lastname','zipcode','accdate'].filter(f=>!mock.info[f]);
+      if(missing.length)infoReminder=`<div style="background:rgba(176,122,255,0.06);border:1px solid rgba(176,122,255,0.15);border-radius:10px;padding:9px 11px;margin-bottom:10px;font-size:12px;color:var(--purple)">📋 Still need: <strong>${missing.map(f=>({firstname:'First Name',lastname:'Last Name',zipcode:'ZIP',accdate:'Year'})[f]).join(', ')}</strong></div>`;
+    }
+
+    $('sug-content').innerHTML=`
+      <div style="font-size:11px;color:var(--ac2);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:'DM Mono',monospace">📜 ${esc(step.label)} — Live Coaching</div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:10px;padding:9px 11px;background:rgba(91,141,238,0.06);border-radius:8px;border-left:2px solid var(--ac);line-height:1.65">${esc(step.you)}</div>
+      ${infoReminder}
+      ${oa?`<div class="sug-opt"><div class="sug-num">Option A — say this</div>${esc(oa)}${ta?`<div class="sug-note">💡 ${esc(ta)}</div>`:''}</div>`:''}
+      ${ob?`<div class="sug-opt"><div class="sug-num">Option B — say this</div>${esc(ob)}${tb?`<div class="sug-note">💡 ${esc(tb)}</div>`:''}</div>`:''}`;
+  }catch(e){
+    if(e.message==='INVALID_KEY'){toast('❌ Groq key invalid — check Settings','error');return;}
+    if(e.message==='RATE_LIMIT'){toast('⏳ Rate limit — wait a moment','warn');return;}
+    $('sug-content').innerHTML=`<div style="font-size:12px;color:var(--t2);padding:9px 11px;background:rgba(91,141,238,0.06);border-radius:8px;border-left:2px solid var(--ac)">${esc(step.you)}</div>`;
+  }
+}
+
+// ── START CALL ────────────────────────────────────────────
+async function startCall(){
+  if(!S.settings.groqKey){toast('Add Groq API key in Settings first','warn');return;}
+  mock={active:true,history:[],step:0,type:$('client-sel').value,seconds:0,timer:null,
+    info:{},secretInfo:null,hasAttorney:false,legaldocsInserted:false,confScore:5,confHistory:[5],patched:false};
+  $('setup-section').classList.add('hidden');
+  $('call-section').classList.remove('hidden');
+  $('report-section').classList.add('hidden');
+  $('wrap-warn').classList.add('hidden');
+  $('bridge-content').innerHTML='<div class="bridge-empty">When client asks a question or objects — answer + bridge will appear here.</div>';
+  renderSteps();renderFeed();renderInfoCard();
+  updateConfidence(0,'Call starting...');
+  $('sug-content').innerHTML='<div class="sug-loading">Client is answering the phone...</div>';
+  mock.timer=setInterval(()=>{
+    mock.seconds++;
+    $('timer').textContent=`${Math.floor(mock.seconds/60)}:${String(mock.seconds%60).padStart(2,'0')}`;
+    if(mock.seconds===180)$('wrap-warn').classList.remove('hidden');
+  },1000);
+  setOrb('thinking');
+  try{
+    const opening=await groq([
+      {role:'system',content:clientPrompt()},
+      {role:'user',content:'Phone rings. You pick up. One short natural sentence only.'}
+    ],50);
+    const line=String(opening||'').trim();
+    mock.history.push({role:'assistant',content:line});
+    renderFeed();
+    await Promise.all([speak(line,'client'),genSuggestions(line)]);
+    if(mock.active&&R.hasSpeech){
+      setTimeout(()=>{if(mock.active&&!R.speechActive&&!R.listening){toast('🎤 Your turn!','success');startRecog();}},400);
+    }
+  }catch(e){
+    if(e.message==='INVALID_KEY')toast('❌ Groq key wrong — check Settings','error');
+    else toast('Failed to start. Check Groq key in Settings.','error');
+    resetToSetup();
+  }
+  finally{setOrb('idle');}
+}
+
+// ── AGENT TURN ────────────────────────────────────────────
+async function agentTurn(text){
+  const line=String(text||'').trim();
+  if(!line||!mock.active||R.thinking)return;
+  mock.history.push({role:'user',content:line});
+  renderFeed();$('call-input').value='';
+
+  // Detect if agent reply sounds confident or weak
+  const weakWords=/um|uh|sorry|i think|maybe|not sure|i don.?t know/i.test(line);
+  const confidentWords=/absolutely|perfect|great|exactly|no problem|don.?t worry|let me/i.test(line);
+  if(weakWords)updateConfidence(-1,'Avoid filler words — sound confident');
+  else if(confidentWords)updateConfidence(+1,'Confident tone — keep it up!');
+
+  // Attorney detection — insert legaldocs step if needed
+  const steps = getActiveSteps();
+  const currentStep = steps[mock.step];
+
+  if(mock.step<steps.length-1)mock.step++;
+  renderSteps();
+  $('sug-content').innerHTML='<div class="sug-loading">Client responding...</div>';
+  try{
+    R.thinking=true;setOrb('thinking');
+    const reply=await groq([
+      {role:'system',content:clientPrompt()},
+      ...mock.history.map(m=>({role:m.role,content:m.content}))
+    ],90);
+    const cl=String(reply||'').trim();
+
+    // Check if client confirmed attorney
+    if(currentStep?.id==='attorney' && detectAttorney(cl) && !mock.hasAttorney){
+      mock.hasAttorney=true;
+      toast('⚖️ Client has attorney — Legal Docs step added','warn');
+      renderSteps();
+    }
+
+    if(cl.includes('HANG_UP')||cl.toUpperCase().includes('HANG_UP')){
+      mock.history.push({role:'assistant',content:'[Click] — Client hung up.'});
+      mock.active=false;renderFeed();
+      updateConfidence(-2,'Client hung up — review what went wrong');
+      toast('Client hung up. Tap End for your report.','warn');
+      $('sug-content').innerHTML='<div class="sug-loading">⚠️ Client hung up. Tap End to see your report.</div>';
+      $('bridge-content').innerHTML='<div class="bridge-empty">Call ended.</div>';
+      return;
+    }
+
+    // Detect patch success
+    const stepNow = getActiveSteps()[mock.step-1];
+    if(stepNow?.id==='patch' && /hold|patch|connect|transfer|moment/i.test(line)){
+      mock.patched=true;
+      updateConfidence(+3,'Patch attempt! 🎯');
+    }
+
+    mock.history.push({role:'assistant',content:cl});
+    extractInfo(line,cl);
+    renderFeed();renderInfoCard();
+    await Promise.all([speak(cl,'client'),genSuggestions(cl)]);
+    if(mock.active&&R.hasSpeech){
+      setTimeout(()=>{if(mock.active&&!R.speechActive&&!R.listening)startRecog();},500);
+    }
+  }catch(e){
+    if(e.message==='INVALID_KEY')toast('❌ Groq key invalid — check Settings','error');
+    else if(e.message==='RATE_LIMIT')toast('⏳ Rate limit — wait a moment','warn');
+    else toast('Response error — check connection','error');
+  }
+  finally{R.thinking=false;if(!R.speechActive)setOrb('idle');}
+}
+
+// ── END CALL ─────────────────────────────────────────────
+async function endCall(){
+  clearInterval(mock.timer);mock.active=false;
+  $('call-section').classList.add('hidden');
+  $('report-section').classList.remove('hidden');
+  S.totalMocks=(S.totalMocks||0)+1;
+  todayStats().mocks=(todayStats().mocks||0)+1;
+  if(mock.patched){S.allPatches=(S.allPatches||0)+1;todayStats().patches=(todayStats().patches||0)+1;}
+  S.allCalls=(S.allCalls||0)+1;
+  // Store final confidence score
+  const finalConf = mock.confScore;
+  S.confScores = [...(S.confScores||[]).slice(-49), finalConf];
+  save();
+
+  if(!mock.history.length){$('report-body').innerHTML='<div style="color:var(--t2)">No call data.</div>';return;}
+  $('report-body').innerHTML='<div class="sug-loading">ARIA is analyzing your call...</div>';
+
+  // Info collected
+  const infoFields=[{key:'firstname',label:'First Name'},{key:'lastname',label:'Last Name'},{key:'zipcode',label:'ZIP Code'},{key:'accdate',label:'Accident Date'},{key:'phone',label:'Phone'},{key:'state',label:'State'}];
+  const collected=infoFields.filter(f=>mock.info[f.key]).length;
+  const infoHtml=`<div class="collected-report">
+    <div class="report-label">📋 Client Info Collected (${collected}/6)</div>
+    ${infoFields.map(f=>`<div class="collected-row"><span class="collected-key">${f.label}</span><span class="collected-val ${mock.info[f.key]?'':'miss'}">${mock.info[f.key]||'Not collected'}</span></div>`).join('')}
+  </div>`;
+
+  // Confidence summary
+  const avgConf = mock.confHistory.length ? Math.round(mock.confHistory.reduce((a,b)=>a+b,0)/mock.confHistory.length*10)/10 : 5;
+  const confHtml=`<div style="background:rgba(91,141,238,0.07);border:1px solid rgba(91,141,238,0.15);border-radius:14px;padding:14px;margin-bottom:12px">
+    <div class="report-label">⚡ Confidence Summary</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:36px;font-weight:700;color:${finalConf>=7?'var(--green)':finalConf>=4?'var(--amber)':'var(--red)'}">${finalConf}/10</div>
+      <div><div style="font-size:13px;color:var(--t2)">Average: ${avgConf}/10</div><div style="font-size:12px;color:var(--t3);margin-top:2px">${mock.patched?'✅ Patched successfully':'❌ Did not reach patch'}</div></div>
+    </div>
+  </div>`;
+
+  if(!S.settings.groqKey){
+    $('report-body').innerHTML=`${confHtml}${infoHtml}<div class="report-section"><div class="report-label">Note</div><div class="report-text">Add Groq key for detailed AI coaching.</div></div>`;
+    return;
+  }
+  try{
+    const transcript=mock.history.map(m=>`${m.role==='assistant'?'CLIENT':'MARK'}: ${m.content}`).join('\n');
+    const callTime=`${Math.floor(mock.seconds/60)}:${String(mock.seconds%60).padStart(2,'0')}`;
+    const rep=await groq([
+      {role:'system',content:`You are ARIA reviewing a mock call. Give feedback in this EXACT format (no extra text):
+SCORE: [n]/10
+WHAT_WORKED: [2-3 things done well, specific]
+IMPROVE: [2-3 specific fixes with example of better phrasing]
+BRIDGE_SCORE: [how well did they handle client questions and bridge back to script? 1 sentence]
+INFO_COLLECTED: [comment on info collection: name, zip, date]
+FOCUS: [single most important thing for next call]
+Easy English only.`},
+      {role:'user',content:`Duration: ${callTime} | Conf score: ${finalConf}/10 | Patched: ${mock.patched} | Client level: ${mock.type}\nInfo: ${JSON.stringify(mock.info)}\n\n${transcript}`}
+    ],550);
+    const get=p=>{const m=rep.match(new RegExp(p+':\\s*(.+?)(?=\\n[A-Z_]+:|$)','s'));return m?m[1].trim():'';};
+    const score=get('SCORE')||'7/10',worked=get('WHAT_WORKED'),improve=get('IMPROVE'),bridgeScore=get('BRIDGE_SCORE'),infoFeedback=get('INFO_COLLECTED'),focus=get('FOCUS');
+    const scoreNum=parseInt(score)||7;
+    $('report-body').innerHTML=`
+      <div class="score-display">${esc(score)}</div>
+      <div class="stars" style="margin:8px 0 16px">${'⭐'.repeat(Math.round(scoreNum/2))}</div>
+      ${confHtml}${infoHtml}
+      <div class="report-section"><div class="report-label">✅ What Worked</div><div class="report-text">${esc(worked)}</div></div>
+      <div class="report-section"><div class="report-label">⚠️ Improve</div><div class="report-text">${esc(improve)}</div></div>
+      <div class="report-section"><div class="report-label">🌉 Bridge Quality</div><div class="report-text">${esc(bridgeScore)}</div></div>
+      <div class="report-section"><div class="report-label">📋 Info Collection</div><div class="report-text">${esc(infoFeedback)}</div></div>
+      <div class="report-section"><div class="report-label">🎯 Focus for Next Call</div><div class="report-text">${esc(focus)}</div></div>
+      <div class="report-section"><div class="report-label">⏱ Duration</div><div class="report-text">${callTime}</div></div>`;
+    await speak(focus,'assistant');
+  }catch(e){
+    $('report-body').innerHTML=`${confHtml}${infoHtml}<div style="color:var(--t2)">Could not generate AI report. Check Groq key.</div>`;
+  }
+}
+
+function resetToSetup(){
+  clearInterval(mock.timer);
+  mock={active:false,history:[],step:0,type:'l1-friendly',seconds:0,timer:null,info:{},secretInfo:null,hasAttorney:false,legaldocsInserted:false,confScore:5,confHistory:[],patched:false};
+  $('setup-section').classList.remove('hidden');
+  $('call-section').classList.add('hidden');
+  $('report-section').classList.add('hidden');
+  $('wrap-warn').classList.add('hidden');
+  renderDiffBadge();
+}
+
+// ── DIFFICULTY BADGE ──────────────────────────────────────
+function renderDiffBadge(){
+  const diff=getDiff();const total=S.totalMocks||0;
+  const badge=$('diff-badge');
+  const level=diff==='easy'?'Level 1':diff==='medium'?'Level 2':'Level 3';
+  badge.className=`diff-badge diff-${diff}`;badge.textContent=level;
+  $('unlock-msg').textContent=diff==='easy'?`Level 1 (${total}/8) — Level 2 unlocks at 8 calls`:
+    diff==='medium'?`Level 2 (${total}/20) — Level 3 unlocks at 20 calls`:
+    `All levels unlocked — ${total} total calls 💪`;
+  document.querySelectorAll('#client-sel option').forEach(o=>{
+    if(o.value.startsWith('l2'))o.disabled=total<8;
+    if(o.value.startsWith('l3'))o.disabled=total<20;
+  });
+}
+
+// ── CHECKLIST ─────────────────────────────────────────────
+function renderChecklist(){
+  document.querySelectorAll('.check-item').forEach(item=>{
+    const i=item.dataset.i;const done=(S.checkDone||[]).includes(i);
+    item.classList.toggle('done',done);
+    item.querySelector('.check-box').textContent=done?'✓':'';
+  });
+  const n=(S.checkDone||[]).length;
+  $('cl-score').textContent=n===5?'✅ All ready — let\'s go!':`${n}/5 done`;
+  $('cl-score').style.color=n===5?'var(--green)':'var(--t2)';
+}
+
+// ── STATS ─────────────────────────────────────────────────
+function renderStats(){
+  const d=todayStats();
+  $('s-calls').textContent=d.calls||0;
+  $('s-patches').textContent=d.patches||0;
+  $('s-mocks').textContent=d.mocks||0;
+  $('streak-n').textContent=S.streak||0;
+  $('streak-sub').textContent=S.streak>0?`${S.streak} days in a row 💪`:'Start today — open ARIA daily';
+  $('total-mocks').textContent=S.totalMocks||0;
+
+  // Patch rate
+  const allCalls=S.allCalls||0;const allPatches=S.allPatches||0;
+  const rate=allCalls>0?Math.round((allPatches/allCalls)*100):0;
+  $('patch-rate-pct').textContent=rate+'%';
+  $('patch-fraction').textContent=`${allPatches} patched / ${allCalls} total`;
+  $('rate-bar').style.width=Math.min(rate,100)+'%';
+  $('rate-bar').style.background=rate>=50?'var(--green)':rate>=30?'var(--amber)':'var(--red)';
+  $('patch-target').textContent=rate>=50?'🔥 Elite level!':rate>=30?'💪 Good — push for 50%':'Keep going — target 30% first';
+
+  // Avg confidence
+  const scores=S.confScores||[];
+  $('avg-conf').textContent=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length*10)/10:'—';
+  $('total-patches-all').textContent=allPatches;
+  $('diff-progress').textContent=getDiff()==='easy'?`${8-(S.totalMocks||0)} more mocks to unlock Level 2`:
+    getDiff()==='medium'?`${20-(S.totalMocks||0)} more mocks to unlock Level 3`:
+    'All difficulty levels unlocked 🔥';
+}
+
+// ── STREAK ────────────────────────────────────────────────
+function checkStreak(){
+  const today=todayKey();if(S.lastOpen===today)return;
+  const y=new Date();y.setDate(y.getDate()-1);
+  if(S.lastOpen===y.toISOString().slice(0,10))S.streak=(S.streak||0)+1;
+  else S.streak=1;
+  S.lastOpen=today;save();
+}
+
+// ── NEWS ──────────────────────────────────────────────────
+async function loadNews(){
+  const feed=$('news-feed');
+  feed.innerHTML='<div class="news-loading">⏳ Loading AI news...</div>';
+  try{
+    const r=await fetch('https://hn.algolia.com/api/v1/search_by_date?query=artificial+intelligence+LLM+ChatGPT+OpenAI&tags=story&hitsPerPage=10');
+    const data=await r.json();
+    const stories=(data.hits||[]).filter(h=>h.title&&h.url).slice(0,5);
+    if(!stories.length){feed.innerHTML='<div class="news-loading">No news found. Try refreshing.</div>';return;}
+    if(!S.settings.groqKey){
+      feed.innerHTML=stories.map(s=>`<div class="news-item"><div class="news-tag">AI</div><div class="news-head">${esc(s.title)}</div><div class="news-body">Add Groq key in Settings for simple summaries.</div></div>`).join('');
+      return;
+    }
+    const titles=stories.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
+    let rep;
+    try{
+      rep=await groq([
+        {role:'system',content:`Summarize AI news for someone learning English who works in a call center. For each story write:
+- headline: simple English title (no jargon)
+- tag: category (1-2 words)
+- summary: 2-3 VERY simple sentences. Like explaining to a friend who knows nothing about tech.
+- explain: break down the hardest technical word from the headline in 1 plain sentence
+- why: 1-2 sentences on why this matters for daily life or call center work
+
+Return ONLY a clean JSON array, no markdown, no backticks:
+[{"tag":"...","headline":"...","summary":"...","explain":"...","why":"..."}]`},
+        {role:'user',content:titles}
+      ],900);
+    }catch(ke){
+      if(ke.message==='INVALID_KEY'){feed.innerHTML='<div class="news-loading" style="color:var(--red)">❌ Groq key invalid — check Settings</div>';return;}
+      throw ke;
+    }
+    let items=[];
+    try{items=JSON.parse(rep.replace(/```json|```/g,'').trim());}
+    catch(e){feed.innerHTML=stories.map(s=>`<div class="news-item"><div class="news-tag">AI</div><div class="news-head">${esc(s.title)}</div><div class="news-body">Summary unavailable.</div></div>`).join('');return;}
+    feed.innerHTML=items.map(item=>`
+      <div class="news-item">
+        <div class="news-tag">${esc(item.tag||'AI')}</div>
+        <div class="news-head">${esc(item.headline||'')}</div>
+        <div class="news-body">${esc(item.summary||'')}</div>
+        ${item.explain?`<div class="news-explain"><div class="news-lbl" style="color:var(--amber)">📖 What this means</div>${esc(item.explain)}</div>`:''}
+        ${item.why?`<div class="news-why"><div class="news-lbl" style="color:var(--ac2)">💼 Why it matters</div>${esc(item.why)}</div>`:''}
+      </div>`).join('');
+  }catch(e){feed.innerHTML='<div class="news-loading" style="color:var(--red)">Could not load news — check connection.</div>';}
+}
+
+// ── EVENTS ────────────────────────────────────────────────
+function bindEvents(){
+  $('boot-btn').addEventListener('click',()=>{
+    checkStreak();
+    $('splash').style.display='none';$('app').style.display='flex';
+    renderChecklist();renderDiffBadge();renderStats();
+    if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>goPage(t.dataset.page)));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>goPage(b.dataset.page)));
+  $('start-btn').addEventListener('click',startCall);
+  $('mic-btn').addEventListener('click',()=>{if(R.listening){try{R.recognition.stop();}catch(e){}}else startRecog();});
+  $('send-btn').addEventListener('click',()=>agentTurn($('call-input').value));
+  $('call-input').addEventListener('keydown',e=>{if(e.key==='Enter')agentTurn($('call-input').value);});
+  $('end-btn').addEventListener('click',endCall);
+  $('new-call-btn').addEventListener('click',resetToSetup);
+  document.querySelectorAll('.check-item').forEach(item=>{
+    item.addEventListener('click',()=>{
+      const i=item.dataset.i;const done=S.checkDone||[];
+      S.checkDone=done.includes(i)?done.filter(d=>d!==i):[...done,i];
+      save();renderChecklist();
+    });
+  });
+  $('log-call').addEventListener('click',()=>{todayStats().calls++;S.allCalls=(S.allCalls||0)+1;save();renderStats();toast('+1 Call logged 📞','success');});
+  $('log-patch').addEventListener('click',()=>{todayStats().patches++;S.allPatches=(S.allPatches||0)+1;save();renderStats();toast('+1 Patch logged 🎯','success');});
+  $('reset-btn').addEventListener('click',()=>{S.byDay[todayKey()]={calls:0,patches:0,mocks:0};save();renderStats();toast('Today reset','warn');});
+  $('refresh-btn').addEventListener('click',loadNews);
+  $('settings-btn').addEventListener('click',()=>{
+    $('si-groq').value=S.settings.groqKey||'';
+    $('si-eleven').value=S.settings.elevenKey||'';
+    $('si-av').value=S.settings.aVoice||'';
+    $('si-cv').value=S.settings.cVoice||'';
+    $('settings-modal').classList.remove('hidden');
+  });
+  $('close-settings').addEventListener('click',()=>$('settings-modal').classList.add('hidden'));
+  $('settings-modal').addEventListener('click',e=>{if(e.target===$('settings-modal'))$('settings-modal').classList.add('hidden');});
+  $('save-settings').addEventListener('click',()=>{
+    S.settings.groqKey=$('si-groq').value.trim();
+    S.settings.elevenKey=$('si-eleven').value.trim();
+    S.settings.aVoice=$('si-av').value.trim()||'21m00Tcm4TlvDq8ikWAM';
+    S.settings.cVoice=$('si-cv').value.trim()||'ODq5zmih8GrVes37Dizd';
+    save();toast('Settings saved ✅','success');$('settings-modal').classList.add('hidden');
+  });
+  const pl=$('player');
+  pl.addEventListener('play',()=>{R.speechActive=true;setOrb('speaking');});
+  pl.addEventListener('pause',()=>{if(R.settingUpAudio)return;R.speechActive=false;if(!R.listening)setOrb('idle');});
+  pl.addEventListener('ended',()=>{R.speechActive=false;if(!R.listening)setOrb('idle');});
+}
+
+// ── INIT ──────────────────────────────────────────────────
+load();setupRecog();bindEvents();
+
+})();
+</script>
+</body>
+</html>
